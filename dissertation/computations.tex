@@ -1,0 +1,26 @@
+\begin{comment}
+	
+
+For $b = 1, 2, \ldots, B$, $s = 1, 2, \ldots, S_b$ we specify the model as
+\begin{align}
+	Z_{bs0} &= \Lambda_{H.bs} H_{bs0} + e_{Zbs0} \\
+	Z_{bst} &= \Phi_{Z.bs} Z_{bst-1} + \Lambda_{H.bs} H_{bst} - \Phi_{Z.bs} \Lambda_{H.bs} H_{bst-1} + \epsilon_{Zbst} \\
+	H_{bs0} &= \Lambda_{G.bs} G_{b0} + e_{Hbs0} \\
+	H_{bst} &= \Phi_{H.bs} H_{bst-1} + \Lambda_{G.bs} H_{bst} - \Phi_{H.bs} \Lambda_{G.bs} G_{bt-1} + \epsilon_{Hbst} \\
+	G_{b0} &= \Lambda_{F.b} F_0 + e_{Gb0} \\
+	G_{bt} &= \Phi_{G.b} G_{bt-1} + \Lambda_{F.b} F_t - \Phi_{G.b} \Lambda_{F.b} F_{t-1} + \epsilon_{Gbt} \\
+	F_t &= \Phi_F F_{t-1} + \epsilon_{Ft}
+\end{align}
+
+Expansion of $\epsilon_{Zbst}^{\top} \Sigma_{Z.bs}^{-1} \epsilon_{Zbst}$:
+\begin{align}
+	\epsilon_{Zbst} = Z_{bst} - \Phi_{Z.bs} Z_{bst-1} - \Lambda_{H.bs} H_{bst} + \Phi_{Z.bs} \Lambda_{H.bs} H_{bst-1}\right)^{\top}	
+\end{align}
+
+
+
+\begin{align}
+	p \left( Z_{bs0} \,|\, H_{bs0}, \Theta \right) \propto \abs{\text{Id} - \Phi_{Z.bs}^2}^{\frac12} \abs{\Sigma_{Z.bs}}^{-\frac12} \exp \left\{ -\frac12 e_{Zbs0}^{\top} \Sigma_{Z.bs}^{-\frac12} \left( \text{Id} - \Phi_{Z.bs}^2 \right) e_{Zbs0} \right\}
+\end{align}
+
+\end{comment}
