@@ -1,0 +1,92 @@
+\chapter{Appendix}
+\section{Univariate and Multivariate Gaussian Distributions}
+
+\begin{proposition}
+	Let ${\bm \Sigma}$ be a symmetric positive semidefinite $n \times n$ matrix with $\operatorname{rk} \mleft( {\bm \Sigma} \mright) = k \leq n$. Then there exists and $n \times k$ matrix ${\bf A}$ with $\operatorname{rk} \mleft( {\bf A} \mright) = k$ such that ${\bm \Sigma} = {\bf A} {\bf A}^{\top}$.
+\end{proposition}
+
+\begin{definition}
+	Let ${\bf X} \in \mathbb{R}^n$ be a random vector that has mean ${\bm \mu}$ and covariance matrix ${\bm \Sigma}$ with $\text{rk} \mleft( {\bm \Sigma} \mright) = k \leq n$. Then, ${\bf X}$ is called Gaussian if ${\bf X} \overset{d}{=} {\bm \mu} + {\bf A} {\bf Z}$, where ${\bf A}$ is a $n \times k$ such that $\operatorname{rk} \mleft( {\bf A} \mright) = k$ and ${\bm \Sigma} = {\bf A} {\bf A}^{\top}$ and where ${\bf Z} \in \mathbb{R}^k$ is a random vector with ${\bm Z} \sim \mathcal{N} \mleft( {\bf 0}, {\bf I}_k \mright)$.
+\end{definition}
+
+\begin{definition}
+	If ${\bf X} \sim \mathcal{N} \mleft( {\bm \mu}, {\bm \Sigma} \mright)$ and $\text{rk} \mleft( {\bm \Sigma} \mright) = k < n$, then ${\bf X}$ follows a degenerate Gaussian distribution.
+\end{definition}
+
+\begin{proposition} \label{prop: joint}
+	If random variables ${\bm x} \in \mathbb R^n$ and ${\bm y} \in \mathbb R^m$ have the Gaussian distributions
+	\begin{equation}
+		\begin{aligned}
+			\bm x &\sim \mathcal N \left( {\bm \mu}, {\bm \Sigma} \right) \\
+			\bm y \, \vert \, \bm x &\sim \mathcal N \left( {\bm A} {\bm x} + {\bm b}, {\bm \Omega} \right)
+		\end{aligned}
+	\end{equation}
+	then the joint distribution of ${\bm x}$ and ${\bm y}$ is given as
+		\begin{equation}
+			\begin{bmatrix} {\bm x} \\ {\bm y} \end{bmatrix} \sim 
+				\mathcal{N} \left( 
+					\begin{bmatrix} 
+						{\bm \mu} \\ {\bm A} {\bm \mu} + {\bm b} 
+					\end{bmatrix}, 
+					\begin{bmatrix}
+						{\bm \Sigma} & {\bm \Sigma} {\bm A}^{\top} \\ 
+						{\bm A} {\bm \Sigma} & {\bm A} {\bm \Sigma} {\bm A}^{\top} + {\bm \Omega}
+					\end{bmatrix}
+				\right).
+		\end{equation}
+\end{proposition}
+
+\begin{proposition} \label{prop: cond}
+	If random variables ${\bm x} \in \mathbb R^n$ and ${\bm y} \in \mathbb R^m$ have the joint Gaussian distribution
+	\begin{equation}
+		\begin{bmatrix} {\bm x} \\ {\bm y} \end{bmatrix} \sim 
+		\mathcal N \left(
+			\begin{bmatrix} {\bm a} \\ {\bm b} \end{bmatrix}, 
+			\begin{bmatrix} {\bm A} & {\bm C} \\ {\bm C}^{\top} & {\bm B} \end{bmatrix}
+		\right),
+	\end{equation}
+	then the conditional distributions of ${\bm x}$ and ${\bm y}$ are given as
+	\begin{align}
+		{\bm x} \, \vert \, {\bm y} &\sim \mathcal N \left( {\bm a} + {\bm C} {\bm B}^{-1} \left( {\bm y} - {\bm b} \right), {\bm A} - {\bm C} {\bm B}^{-1} {\bm C}^{\top} \right) \\
+		{\bm y} \, \vert \, {\bm x} &\sim \mathcal N \left( {\bm b} + {\bm C}^{\top} {\bm A}^{-1} \left( {\bm x} - {\bm a} \right), {\bm B} - {\bm C}^{\top} {\bm A}^{-1} {\bm C} \right),
+	\end{align}
+	provided ${\bm A}$ and ${\bm B}$ are invertible.
+\end{proposition}
+
+\clearpage
+\section{Computations}
+
+\section{Not sure if needed}
+\begin{equation}
+	\left( {\bm x}_1 + {\bm x}_2 + \cdots + {\bm x}_n \right)^{\top} {\bf A} \left( {\bm x}_1 + {\bm x}_2 + \cdots + {\bm x}_n \right) = \sum_{i = 1}^n {\bm x}_i^{\top} {\bf A} {\bm x}_i + 2 \sum_{1 \leq i < j \leq n} {\bm x}_i^{\top} {\bf A} {\bm x}_j
+\end{equation}
+
+\begin{equation}
+	{\bm X}_t = {\bm \Lambda} {\bm F}_t + {\bm e}_t
+\end{equation}
+
+\begin{equation}
+	p \left( {\bm X}_{1:T}, {\bm F}_{1:T} \, \vert \, {\bm \Lambda}, {\bm \Sigma} \right) = \prod_{t = 1}^T p \left( {\bm X}_t \, \vert \, {\bm F}_t, {\bm \Lambda}, {\bm \Sigma} \right) \cdot p \left( {\bm F}_t \right)
+\end{equation}
+
+\begin{align*}
+	%p \left( {\bm X}_t \, \vert \, {\bm F}_t, {\bm \Lambda}, {\bm \Sigma} \right) 
+	&= \mathcal{N} \left( {\bm X}_t \, \vert \, {\bm \Lambda} {\bm F}_t, {\bm \Sigma} \right) \\
+	&= \left( 2 \pi \right)^{-N/2} \det \left( {\bm \Sigma} \right)^{-1/2} \exp \left\{ -\frac12 \left( {\bm X}_t - {\bm \Lambda} {\bm F}_t \right)^{\top} {\bm \Sigma}^{-1} \left( {\bm X}_t - {\bm \Lambda} {\bm F}_t \right) \right\} \\
+	&= \left( 2 \pi \right)^{-N/2} \det \left( {\bm \Sigma} \right)^{-1/2} \exp \left\{ -\frac12 {\bm X}_t^{\top} {\bm \Sigma}^{-1} {\bm X}_t + {\bm F}_t^{\top} {\bm \Lambda}^{\top} {\bm \Sigma}^{-1} {\bm X}_t - \frac12 {\bm F}_t^{\top} {\bm \Lambda}^{\top} {\bm \Sigma}^{-1} {\bm \Lambda} {\bm F}_t \right\} \\
+	&= \left( 2 \pi \right)^{-N/2} \det \left( {\bm \Sigma} \right)^{-1/2} \exp \left\{ -\frac12 \text{tr} \left( {\bm X}_t^{\top} {\bm \Sigma}^{-1} {\bm X}_t \right) + \text{tr} \left( {\bm F}_t^{\top} {\bm \Lambda}^{\top} {\bm \Sigma}^{-1} {\bm X}_t \right) - \frac12 \text{tr} \left( {\bm F}_t^{\top} {\bm \Lambda}^{\top} {\bm \Sigma}^{-1} {\bm \Lambda} {\bm F}_t \right) \right\} \\
+	&= \left( 2 \pi \right)^{-N/2} \det \left( {\bm \Sigma} \right)^{-1/2} \exp \left\{ -\frac12 \text{tr} \left( {\bm \Sigma}^{-1} {\bm X}_t {\bm X}_t^{\top} \right) + \text{tr} \left( {\bm \Lambda}^{\top} {\bm \Sigma}^{-1} {\bm X}_t {\bm F}_t^{\top} \right) - \frac12 \text{tr} \left( {\bm \Lambda}^{\top} {\bm \Sigma}^{-1} {\bm \Lambda} {\bm F}_t {\bm F}_t^{\top} \right) \right\} \\
+	&= -\frac12 \text{vec} \left( {\bm \Sigma}^{-1} \right)^{\top} \text{vec} \left( {\bm X}_t {\bm X}_t^{\top} \right) + \text{vec} \left( {\bm \Sigma}^{-1} {\bm \Lambda} \right)^{\top} \text{vec} \left( {\bm X}_t {\bm F}_t^{\top} \right) - \frac12 \text{vec} \left( {\bm \Lambda}^{\top} {\bm \Sigma}^{-1} {\bm \Lambda} \right)^{\top} \text{vec} \left( {\bm F}_t {\bm F}_t^{\top} \right)
+\end{align*}
+
+\section{Gibbs Sampler for Factor Analysis}
+The full conditional distributions for ${\bf F}$, ${\bm \Lambda}$, and ${\bm \Lambda}$ are as follows
+\begin{align}
+	{\bf F} \, \vert \, \mathcal{MN} \mleft( \mright)
+\end{align}
+
+
+
+
+
+
