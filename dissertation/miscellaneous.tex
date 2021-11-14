@@ -1,0 +1,624 @@
+\clearpage
+\chapter{I DUNNO}
+\textcolor{red}{I may end up scrapping all that's in this chapter, but will keep the text just in case I decide against it.}
+
+\section{Gibbs sampler}
+A Gibbs sampler refers to an MCMC algorithm that repeatedly samples from the conditional distribution of one variable of the target distribution given all of the other variables. This technique allows us to generate a sample from the target distribution without requiring the target distribution \cite{casella1992explaining}. The sampler assumes that we can sample exactly from the full conditional distributions.  Here we present a Gibbs sampler algorithm for a two-level dynamic factor model. We also show how to derive each of the full conditional distributions necessary to implement the algorithm.
+
+ Let ${\bf \Lambda} = \Lambda$, ${\bf \Psi} = \left( \Psi_X, \Psi_F \right)$, ${\bf \Sigma} = \left( \Sigma_X, \Sigma_F \right)$. Let $ {\bf F} \equiv F_{1}, F_{2}, \ldots, F_{T}$ and ${\bf X} \equiv X_{1}, X_{2}, \ldots, X_{T}$. In  our case the target distribution is the joint posterior distribution over the latent factors and  model parameters, $p \left( \bf F, \Lambda, \Psi, \Sigma | X \right)$. The algorithm consists mainly of the following steps:
+\begin{enumerate}
+	\item Initialize ${\bf F}$ via PCA and use it to obtain initial values for $\bf \Lambda$, $ \bf \Psi$, $\bf \Sigma$.
+	\item Conditional on ${\bf X}$, $\bf \Lambda$, $\bf \Psi$, and $\bf \Sigma$ draw ${\bf F}$.
+	\item Conditional on ${\bf X}$, ${\bf F}$, $\bf \Psi$, and $\bf \Sigma$ draw $\bf \Lambda$.
+	\item Conditional on ${\bf X}$, ${\bf F}$, $\bf \Lambda$, and $\bf \Sigma$ draw $\bf \Psi$.
+	\item Conditional on ${\bf X}$, ${\bf F}$, $\bf \Lambda$, and $\bf \Psi$ draw $\bf \Sigma$.
+	\item Return to 2.
+\end{enumerate}
+
+We assume that the prior distribution over the model parameters can be factorized in the following way
+\begin{equation}
+	\begin{aligned}
+		p \left( \bf \Lambda, \Psi, \Sigma \right) &= p \left( \bf \Lambda \right) p \left( \bf \Psi | \Sigma \right) p \left( \bf \Sigma \right) \\
+		&= p \left( \Lambda \right) p \left( \Psi_X | \Sigma_X \right) p \left( \Sigma_X \right) p \left( \Psi_F | \Sigma_F \right) p \left( \Sigma_F \right),
+	\end{aligned}
+\end{equation}
+and letting $\lambda_{n,k}$ represent the entry in row $n$ and column $k$ of $\Lambda$ we can specify the prior distributions to the model parameters as
+
+\begin{align}
+	p \left(\Lambda \right)	&= \prod_{n = 2}^K \prod_{k = 1}^{\min (n - 1, K)} \mathcal N \left( \lambda_{n,k} | 0, 1 \right) \\
+	p \left( \Sigma_F \right) &= \prod_{k=1}^K \text{Inv-}\chi^2 \left( \sigma^2_{Fk} | 4, 0.01^2 \right) \\
+	p \left( \Psi_{Fi} \right) &= \prod_{k=1}^K \mathcal N \left( \psi_{Fi k} | 0, \sigma^2_{Fk} \right), \quad i = 1, 2, \ldots, p \\
+	p \left( \Sigma_X \right) &= \prod_{n=1}^N \text{Inv-}\chi^2 \left( \sigma^2_{Xn} | 4, 0.01^2 \right) \\
+	p \left( \Psi_{Xj} \right) &= \prod_{n=1}^N \mathcal N \left( \psi_{Xj n} | 0, \sigma^2_{Xn} \right), \quad j = 1, 2, \ldots, q.
+\end{align}
+
+Let $X_{t_a:t_b} \equiv X_{t_a}, \ldots, X_{t_b}$ for any $t_a < t_b$ and ${ \bf \Theta } = \left( \bf \Lambda, \Psi, \Sigma \right)$. We show how to implement a Gibbs sampler for a simplified DFM that assumes that $p = 1$ and $q = 1$. The observation equation becomes
+\begin{equation}
+	X_t = \Lambda F_t + e_{Xt} , \quad \Psi_X (L) e_{Xt} = \epsilon_{Xt}, \quad \epsilon_{Xt} \overset{\text{iid}}{\sim} \mathcal N \left( 0, \Sigma_X \right) \label{obs-eq-var-errors}
+\end{equation}
+and the latent factor transition equation becomes
+\begin{equation}
+	F_t = \Psi_{F1} F_{t-1} + \epsilon_{Ft}, \quad \epsilon_{Ft} \overset{\text{iid}}{\sim} \mathcal N \left( 0, \Sigma_F \right).	
+\end{equation}
+Applying $\Psi_X (L)$ to both sides of equation (\ref{obs-eq-var-errors}) we can express the observation equation as
+\begin{equation}
+	X_t = \Psi_{X1} X_{t-1} + \Lambda F_t - \Psi_{X1} \Lambda F_{t-1} + \epsilon_{Xt}.
+\end{equation}
+This will be useful when expressing the joint distribution of the observations conditional on the latent factors. 
+
+We need to obtain the full conditional densities for the factors and the model parameters. Each full conditional density will be proportional to the full joint density of the observations, factors, and the model parameters which can be factorized as
+\begin{equation}
+	p \left( X_{1:T}, F_{1:T}, \Theta \right) = p \left( X_{1:T} | F_{1:T}, \Theta \right) p \left( F_{1:T} | \Theta \right) p \left( \Theta \right)
+\end{equation}
+We show what how each density on the RHS can be expressed.
+
+The likelihood can be expressed as
+\begin{align}
+	p \left( X_{1:T} | F_{1:T} , \Theta \right) 
+	&= p \left( X_1 | F_{1:T}, \Theta  \right) \prod_{t = 2}^T p \left( X_t | X_{1:t-1}, F_{1:T}, \Theta \right) \\
+	&= p \left( X_1 | F_1, \Theta \right) \prod_{t = 2}^T p \left( X_t | X_{t-1}, F_{t-1:t}, \Theta \right)
+\end{align}
+The first observation is modeled by 
+\begin{equation*}
+	X_1 = \Lambda F_1 + e_{X1}, \quad e_{X1} = \Psi_{X1} e_{X0} + \epsilon_{X1}, \quad 	\epsilon_{X1} \overset{\text{iid}}{\sim} \mathcal N \left( 0, \Sigma_X \right).
+\end{equation*}
+The idiosyncratic components are assumed to be a stationary Gaussian process. 
+It follows that the distribution of $X_1$ conditioned on $F_1$ and $\Theta$ is Gaussian. 
+It can be shown that $\mathbb E \left( e_{X1} \right) = 0$ and this implies that $\mathbb E \left( X_1 | F_1, \Theta \right) = \Lambda F_1$. 
+We require that $\mathbb V \left( e_{Xt} \right) = \mathbb V \left( e_{Xt+1} \right) = V_X$ for all $t$. When $t = 1$ we have that
+\begin{align*}
+	\mathbb V \left( e_{X1} \right) &= \mathbb V \left( \Psi_{X1} e_{X0} + \epsilon_{X1} \right) \\
+	&= \Psi_{X1} \mathbb V \left( e_{X0} \right) \Psi_{X1}^{\top} + \Sigma_X \\
+	&= \Psi_{X1} \mathbb V \left( e_{X1} \right) \Psi_{X1} + \Sigma_X,
+\end{align*}
+where we drop the transpose since $\Psi_{X1}$ is diagonal. This leads to a so-called ``fixed-point equation" 
+\begin{equation*}
+	V_X = \Psi_{X1} V_X \Psi_{X1} + \Sigma_X,	
+\end{equation*}
+which has solution $V_X = \left( \text{Id} - \Psi_{X1}^2 \right)^{-1} \Sigma_X$. 
+Thus, $\mathbb V \left( X_1 | F_1, \Theta \right) = V_X$ and the density for $X_1$ conditioned on $F_1$ and $\Theta$ is
+\begin{equation}
+	p \left( X_1 | F_1, \Theta \right) \propto \lvert V_X \rvert^{-\frac12} \exp \left[ -\frac12 \left( X_1 - \Lambda F_1 \right)^{\top} V_X^{-1} \left( X_1 - \Lambda F_1 \right) \right].
+\end{equation}
+The observation equations for $t = 2, 3, \ldots, T$ are modeled by 
+\begin{equation}
+	X_t = \Psi_{X1} X_{t-1} + \Lambda F_t - \Psi_{X1} \Lambda F_{t-1} + \epsilon_{Xt}.
+\end{equation}
+It follows that $X_t | X_{t-1}, F_{t-1}, F_t, \Theta$ is Gaussian and
+\begin{equation}
+	p \left( X_t | X_{t-1}, F_{t-1}, F_t, \Theta \right) \propto \lvert \Sigma_X \rvert^{-\frac12} \exp \left[ -\frac12 \left( X_t - \mu_{Xt} \right)^{\top} \Sigma_X^{-1} \left( X_t - \mu_{Xt} \right) \right]
+\end{equation}
+
+The joint density of the latent factors can be expressed as
+\begin{align}
+	p \left( F_{1:T} | \Theta \right)
+	&= p \left(F_1 | \Theta \right)	\prod_{t = 2}^T p \left( F_t | F_{t-1}, \Theta \right).
+\end{align}
+We assume that the latent factors are a stationary VAR(1) process. The density for the factor at $t = 1$ is Gaussian. It can be shown that $\mathbb E \left( F_1 \right) = 0$ and that $\mathbb V \left( F_1 \right) = V_F = \left( \text{Id} - \Psi_{F1}^2 \right)^{-1} \Sigma_F$, thus
+\begin{equation}
+	p \left( F_1 | \Theta \right) \propto \lvert V_F \rvert^{-\frac12} \exp \left[ -\frac12 F_1^{\top} V_F^{-1} F_1 \right]
+\end{equation}
+ It follows that $F_t | F_{t-1}$ is Gaussian for $t = 2, 3, \ldots, T$ and
+ \begin{equation}
+ 	p \left( F_t | F_{t-1}, \Theta \right) \propto \lvert \Sigma_F \rvert^{-\frac12} \exp \left[ -\frac12 \left( F_t - \Psi_{F1} F_{t-1} \right)^{\top} \Sigma_F^{-1} \left( F_t - \Psi_{F1} F_{t-1} \right) \right].
+ \end{equation}
+ 
+ The unnormalized posterior distribution is
+ \begin{equation} \label{unnormal-post-dist}
+ 	p \left( F_{1:T}, {\Theta} | X_{1:T} \right)	\propto p \left( X_{1:T} | F_{1:T}, \Theta \right) p \left( F_{1:T} | \Theta \right) p \left( \Theta \right).
+ \end{equation}
+
+\subsection{Full Conditional Distributions}
+\subsubsection{Full Conditional Distribution of $F_{1:T}$}
+The full conditional distribution of $F_{1:T}$ is proportional to the product of the likelihood and the joint distribution of the latent factors:
+\begin{equation}
+	p \left( F_{1:T} | X_{1:T}, \Theta \right) \propto p \left( X_{1:T} | F_{1:T}, \Theta \right) p \left( F_{1:T} | \Theta \right).
+\end{equation}
+
+\subsubsection{Full Conditional Distribution of $\Lambda$}
+The full conditional distribution of $\Lambda$ is proportional to the product of the likelihood and the prior distribution of $\Lambda$:
+\begin{equation}
+	p \left( \Lambda | X_{1:T}, \Theta_{-\Lambda} \right) \propto p \left( X_{1:T} | F_{1:T}, \Theta \right) p \left( \Lambda \right)
+\end{equation}
+
+\subsubsection{Full Conditional Distribution of $\Psi_{X1}$}
+The full conditional distribution of $\Psi_{X1}$ is proportional to the product of the likelihood and the prior distribution of $\Psi_{X1} | \Sigma_{X}$:
+\begin{equation}
+	p \left( \Psi_{X1}| X_{1:T}, \Theta_{-\Psi_{X1}} \right) \propto p \left( X_{1:T} | F_{1:T}, \Theta \right) p \left( \Psi_{X1} | \Sigma_{X} \right)
+\end{equation}
+
+\subsubsection{Full Conditional Distribution of $\Psi_{X1}$}
+The full conditional distribution of $\Psi_{X1}$ is proportional to the product of the likelihood and the prior distribution of $\Psi_{X1} | \Sigma_{X}$:
+\begin{equation}
+	p \left( \Psi_{X1}| X_{1:T}, \Theta_{-\Psi_{X1}} \right) \propto p \left( X_{1:T} | F_{1:T}, \Theta \right) p \left( \Psi_{X1} | \Sigma_{X} \right)
+\end{equation}
+
+\subsubsection{Full Conditional Distribution of $\Psi_{F1}$}
+The full conditional distribution of $\Psi_{F1}$ is proportional to the product of the likelihood and the prior distribution of $\Psi_{F1} | \Sigma_{F}$:
+\begin{equation}
+	p \left( \Psi_{F1}| X_{1:T}, \Theta_{-\Psi_{F1}} \right) \propto p \left( X_{1:T} | F_{1:T}, \Theta \right) p \left( \Psi_{F1} | \Sigma_{F} \right)
+\end{equation}
+
+\subsubsection{Full Conditional Distribution of $\Sigma_X$}
+The full conditional distribution of $\Sigma_X$ is proportional to the product of the likelihood, the prior distribution of $\Psi_{X1} | \Sigma_{X}$ and the prior distribution of $\Sigma_{X}$:
+\begin{equation}
+	p \left( \Sigma_{X} | X_{1:T}, \Theta_{-\Sigma_X} \right) \propto p \left( X_{1:T} | F_{1:T}, \Theta \right) p \left( \Psi_{X1} | \Sigma_X \right) p \left( \Sigma_{X} \right)
+\end{equation}
+
+\subsubsection{Full Conditional Distribution of $\Sigma_F$}
+The full conditional distribution of $\Sigma_F$ is proportional to the product of the likelihood and the prior distribution of $\Psi_{F1} | \Sigma_{F}$ and the prior distribution of $\Sigma_{F}$:
+\begin{equation}
+	p \left( \Sigma_{X} | X_{1:T}, \Theta_{-\Sigma_F} \right) \propto p \left( F_{1:T} | \Theta \right) p \left( \Psi_{F1} | \Sigma_{F} \right) p \left( \Sigma_{F} \right)
+\end{equation}
+
+\section{Alternative method}
+Using the state-space representation in (\ref{SSR-obs}) and (\ref{SSR-state}) we attempt to find solutions by minimizing the following:
+
+\begin{equation}
+	\min_{\tilde \Lambda} \norm{ \tilde{X}_t - \tilde \Lambda \vec F_t }^2_F + \frac{\alpha_\Lambda}{2} \norm{ \tilde \Lambda }^2_F,
+\end{equation}
+
+\begin{equation}
+	\min_{\Psi_F } \norm{ \vec F_t - \Psi_F \vec F_{t-1} }^2_F + \frac{\alpha_\Psi}{2} \norm{ \tilde \Psi_F }^2_F,
+\end{equation}
+where $\norm{ A }^2_F = \Tr \left( A^{\top} A \right)$
+
+\clearpage
+\section{State-Space Representation}
+Here we provide a state-space representation for the dynamic factor model. The complete-data likelihood $p(\bf X | F, \Lambda_F, \Psi, \Sigma)$ is in the exponential family thus we can consider it as a conjugate-exponential model. For conjugate-exponential models, the variational approximation can be optimized using the variational Bayesian expectation-maximization (VB-EM) algorithm. The goal is to apply the method from \cite{bealVariationalAlgorithmsApproximate} to the state-space representation and use the results to derive $q \left( \bf F, \Lambda_F, \Psi, \Sigma \right)$ which is the variational approximation for the posterior distribution $p\left( \bf F, \Lambda_F, \Psi, \Sigma | X \right)$. This will yield an algorithm that uses the Variational Bayesian framework to solve the dynamic factor model.
+
+Applying $\Psi_X (L)$ to both sides of the observation equation in (\ref{obs-eqn}) gives what we will call the pseudo-observation equation that has a Gaussian error term:
+\begin{equation}
+	\tilde X_{t} = \tilde{\Lambda}_F (L) F_{t} + \epsilon_{X t}, \quad \epsilon_{X t} \sim \mathcal N \left( 0, \Sigma_X \right)
+\end{equation}
+with $\tilde{\Lambda}_F (L)$ being a matrix polynomial in $L$ of order $p$, i.e.
+\begin{equation}
+	\tilde{\Lambda}_F (L) = \sum_{j = 0}^{p} \tilde{\Lambda}_{Fj} L^{j}.
+\end{equation}
+Thus,
+\begin{equation}
+	\begin{aligned}
+		\tilde{X}_{t} &= \tilde{\Lambda}_{F0} F_{t} + \tilde{\Lambda}_{F1} F_{t-1} + \cdots + \tilde{\Lambda}_{Fp} F_{t-p} + \epsilon_{X t} \\
+		 &= \tilde{\Lambda}_F \vec{F}_{t} + \epsilon_{Xt},
+	\end{aligned}
+\end{equation}
+with $\tilde{\Lambda}_F$ being a block matrix and $\vec{F}_{t}$ being a tall vector, i.e.
+$$\tilde{\Lambda}_F = 
+	\begin{bmatrix}
+		\tilde{\Lambda}_{F0} & \tilde{\Lambda}_{F1} & \cdots & \tilde{\Lambda}_{Fp} 
+	\end{bmatrix}$$
+and 
+$$ \vec{F}_{t} = 
+	\begin{bmatrix}
+		F_{t} \\ F_{t-1} \\ \vdots \\ F_{t-p}
+	\end{bmatrix}.$$
+The dimension of $\tilde{\Lambda}_F$ is $N \times K (p + 1)$ and the dimension of $\vec{F}_{t}$ is $K (p + 1) \times 1$.
+The state transition equation in (\ref{trans-eqn}) implies that 
+\begin{equation}
+	F_{t} = \Psi_{F1} F_{t-1} + \Psi_{F2} F_{t-2} + \cdots + \Psi_{Fp} F_{t - p} + \epsilon_{Ft},
+\end{equation}
+so we can represent $\vec{F}_{t}$ as 
+$$\vec{F}_{t} = \Psi_{F} \vec{F}_{t-1} + \vec{\epsilon}_{Ft},$$
+where
+$$\Psi_{F} = 
+	\begin{bmatrix}
+		\Psi_{F1} & \Psi_{F2} & \cdots & \Psi_{Fp} & \bf 0 & \cdots & \bf 0 \\
+		\text{Id}_K & \bf 0 & \cdots & \bf 0 & \bf 0 & \cdots & \bf 0 \\
+		\vdots & \vdots & & \vdots & \vdots & & \vdots \\
+		\bf 0 & \bf 0 & \cdots & \text{Id}_K & \bf 0 & \cdots & \bf 0		
+	\end{bmatrix},$$
+$$\vec{\epsilon}_{Ft} =
+\begin{bmatrix}
+		\epsilon_{Ft} \\ \bf 0 \\ \vdots \\ \bf 0
+	\end{bmatrix}.$$
+$\Psi_{F}$ has dimension $K (p + 1) \times K (p + 1)$, $\vec{\epsilon}_{Ft}$ has dimension $K (p + 1) \times 1$ and each $\bf 0$ is of conformable size. Thus, the state-space representation can be given as 
+\begin{align} 
+	\tilde{X}_{t} &= \tilde{\Lambda}_F \vec{F}_{t} + \epsilon_{Xt}, \quad \epsilon_{Xt} \sim \mathcal N \left( 0, \Sigma_X \right) \label{SSR-obs} \\
+	\vec{F}_{t} &= \Psi_{F} \vec{F}_{t-1} + \vec{\epsilon}_{Ft}, \quad \vec{\epsilon}_{Ft} \sim \mathcal N \left( 0, \vec{\Sigma}_F \right) \label{SSR-state},
+\end{align}
+where $\vec{\Sigma}_F = e_1 e_1^{\top} \otimes \Sigma_F,$ with $e_1$ being the unit vector of length $p + 1$ with a one in the first entry and $\otimes$ denotes the Kronecker product.
+
+\section{RTS Smoother}
+\subsection{Kalman Filter Derivation}	
+Here we derive the Kalman Filter recursions for the state-space representation of our model. Most derivations of these recursions make use of probability density functions. Since the covariance matrix $\vec{\Sigma}_F$ is singular, the state-transition probability density function does not exist and the validity of the Kalman Filter recursions become questionable as a result of this. We provide an argument that the recursions are valid by using only properties of Gaussian random variables listed in the appendix and state-space model (SSM) properties. 
+
+The state-space structure retains the Markovian properties of the SSM. The current observation and past state are conditionally independent given the current state, i.e.
+\begin{equation*}
+	\tilde{X}_{t} | \vec{F}_{t}, \vec{F}_{t-1} \overset{\text D}{=} \tilde{X}_{t} \vert \vec{F}_{t}.
+\end{equation*}
+The current observation and previous observations and states are conditionally independent given the current state, i.e.
+\begin{equation*}
+	\tilde{X}_{t} | \vec{F}_{1:t}, \tilde{X}_{1:t-1} \overset{\text D}{=} \tilde{X}_{t} \vert \vec{F}_{t}.
+\end{equation*}
+By proposition \ref{prop: joint} it follows that
+\begin{equation}
+	\begin{pmatrix} \vec{F}_{t} \\ \tilde{X}_{t} \end{pmatrix} 
+	\vert \vec{F}_{t-1} \sim 
+	\mathcal N \left( 
+		\begin{pmatrix} \Psi_{F} \vec{F}_{t-1} \\ \tilde{\Lambda} \Psi_{F} \vec{F}_{t-1} \end{pmatrix},
+		\begin{pmatrix} 
+			\vec{\Sigma}_F & \vec{\Sigma}_F \tilde{\Lambda}^{\top} \\ 
+			\tilde{\Lambda} \vec{\Sigma}_F & \tilde{\Lambda} \vec{\Sigma}_F \tilde{\Lambda}^{\top} + \Sigma_X
+		\end{pmatrix} 
+	\right).
+\end{equation}
+By induction, assume that the filtering distribution at time $t-1$ is Guassian, i.e. 
+\begin{equation}
+	\vec{F}_{t-1} | \tilde{X}_{1:t-1} \sim \mathcal N (\mu_{t-1 | 1:t-1}^F, P_{t-1 | 1:t-1}^F).
+\end{equation}
+Since 
+\begin{equation*}
+	\begin{aligned}
+		\vec{F}_{t} | \vec{F}_{t-1} &\overset{\text D}{=} \vec{F}_{t} | \vec{F}_{t-1}, \tilde{X}_{1:t-1} \\
+		\tilde{X}_{t} \vert \vec{F}_{t} &\overset{\text D}{=} \tilde{X}_{t} | \vec{F}_{t}, \tilde{X}_{1:t-1}
+	\end{aligned}
+\end{equation*}
+ by proposition \ref{prop: joint} it follows that 
+
+\begin{equation}
+	\vec{F}_{t} | \tilde{X}_{1:t-1} \sim \mathcal N \left( \mu_{t | 1:t-1}^{F}, P_{t | 1:t-1}^F \right),
+\end{equation}
+where 
+and 
+\begin{equation}
+	\begin{pmatrix} \vec{F}_{t} \\ \tilde{X}_{t} \end{pmatrix} | \tilde{X}_{1:t-1} \sim 
+	\mathcal N \left( 
+		\begin{pmatrix} \mu_{t | 1:t-1}^{F} \\ \tilde{\Lambda} \mu_{t | 1:t-1}^F \end{pmatrix},
+		\begin{pmatrix} 
+			P_{t | 1:t-1}^F & P_{t | 1:t-1}^F \tilde{\Lambda}^{\top} \\ 
+			\tilde{\Lambda} P_{t | 1:t-1}^F & \tilde{\Lambda} P_{t | 1:t-1}^F \tilde{\Lambda}^{\top} + \Sigma_X
+		\end{pmatrix} 
+	\right),
+\end{equation}
+where
+\begin{align*}
+	\mu_{t | 1:t-1}^F &= \Psi_{F} \mu_{t-1 | 1:t-1}^F \\
+	P_{t | 1:t-1}^F &=  \Psi_{F} P_{t-1 | 1:t-1}^F \Psi_{F}^{\top} + \vec{\Sigma}_F
+\end{align*}
+By proposition \ref{prop: cond} it follows that 
+\begin{equation}
+	\vec{F}_{t} | \tilde{X}_{1:t} \sim \mathcal N (\mu_{t | 1:t}^F, P_{t | 1:t}^F)	
+\end{equation}
+where
+\begin{equation}
+	\begin{aligned}
+		\mu_{t | 1:t}^F &= \mu_{t | 1:t-1}^F + P_{t | 1:t-1}^{Fx} \left( P_{t | 1:t-1}^x \right)^{-1} \left( \tilde{X}_{t} - \mu_{t | 1:t-1}^x \right) \\
+		P_{t | 1:t}^F &= P_{t | 1:t-1}^F - P_{t | 1:t-1}^{Fx} \left( P_{t | 1:t-1}^x \right)^{-1} \left( P_{t | 1:t-1}^{Fx} \right)^{\top},
+	\end{aligned}
+\end{equation}
+with
+\begin{align*}
+	\mu_{t | 1:t-1}^x &= \tilde{\Lambda} \mu_{t | 1:t-1}^F \\
+	P_{t | 1:t-1}^x &= \tilde{\Lambda} P_{t | 1:t-1}^F \tilde{\Lambda}^{\top} + \Sigma_X \\
+	P_{t | 1:t-1}^{Fx} &= P_{t | 1:t-1}^F \tilde{\Lambda}^{\top}.
+\end{align*}
+The matrix $\tilde{\Lambda} P_{t | 1:t-1}^F \tilde{\Lambda}^{\top}$ can be viewed as a Gramian matrix, which is always positive-semidefinite. We assume that the covariance matrix $\Sigma_X$ is positive-definite, which means that $P_{t | 1:t-1}^x$ is the sum of a positive-semidefinite matrix and a positive-definite matrix. Hence, it follows that $P_{t | 1:t-1}^x$ is invertible. The matrices $\vec{\Sigma}_F$ and $\Psi_{F}$ are singular by construction, so $$\det \left( \Psi_{F} P_{t-1 | 1:t-1}^F \Psi_{F}^{\top} \right) = 0.$$ The best we can say about the matrix $P_{t | 1:t-1}^F$ is that the determinant will be non-negative. Therefore, the filtering distribution at time $t$ may be degenerate. 
+
+\subsection{Variational Kalman Filter Derivation}
+As stated in \cite{bealVariationalAlgorithmsApproximate}, we can replace the parameters with their expectations under the variational density $q_{ \bf \Theta }$.
+
+\clearpage
+\subsection{Kalman Smoother Derivation}
+
+By construction the state transition distribution is degenerate Gaussian:  
+\begin{equation*}
+	\vec{F}_{t+1} \vert \vec{F}_{t} \sim \mathcal{N} \left( \Psi_{F} \vec{F}_{t}, \vec{\Sigma}_F \right).
+\end{equation*}
+Due to the conditional independence properties of SSMs it follows that 
+$$\vec{F}_{t+1} \vert \vec{F}_{t} \overset{\text D}{=} \vec{F}_{t+1} \vert \vec{F}_{t} , \tilde{X}_{1:t}.$$
+In the previous section we showed that the filtering distribution at time $t$ is Gaussian, i.e. 
+$$\vec{F}_{t} \; \vert \; \tilde{X}_{1:t} \sim \mathcal N \left( \mu_{t | 1:t}^F, P_{t | 1:t}^F \right).$$ 
+By proposition \ref{prop: joint} it follows that 
+\begin{equation}
+	\begin{pmatrix} \vec{F}_{t} \\ \vec{F}_{t+1} \end{pmatrix} 
+	\; \vert \; \tilde{X}_{1:t} \sim 
+	\mathcal N \left( \begin{pmatrix} \mu_{t | 1:t}^F \\ \mu_{t+1 | 1:t}^F \end{pmatrix},
+	\begin{pmatrix} 
+		P_{t | 1:t}^F & P_{t | 1:t}^F \Psi_{F}^{\top} \\ 
+		\Psi_{F} P_{t | 1:t}^F & P_{t+1 | 1:t}^F
+	\end{pmatrix} \right),
+\end{equation}
+where 
+\begin{align*}
+	\mu_{t+1 | 1:t}^F &= \Psi_{F} \mu_{t | 1:t}^F \\
+	P_{t+1 | 1:t}^F &= \Psi_{F} P_{t | 1:t}^F \Psi_{F}^{\top} + \vec{\Sigma}_F.	
+\end{align*}
+Again, due to the conditional independence properties of SSMs it follows that 
+$$\vec{F}_{t} \vert \vec{F}_{t+1}, \tilde{X}_{1:T} \overset{\text D}{=} \vec{F}_{t} \vert \vec{F}_{t+1} , \tilde{X}_{1:t}.$$
+Then by proposition \ref{prop: cond} it follows that $\vec{F}_{t} \vert \vec{F}_{t+1}, \tilde{X}_{1:T}$ is Gaussian with mean and covariance given, respectively, as
+\begin{align}
+	m &= \mu_{t | 1:t}^F + P_{t | 1:t}^F \Psi_{F}^{\top} \left( P_{t+1 | 1:t}^F \right)^{-1} \left( \vec{F}_{t+1} - \mu_{t+1 | 1:t}^F \right) \\
+	P &= P_{t | 1:t}^F - P_{t | 1:t}^F \Psi_{F}^{\top} \left( P_{t+1 | 1:t}^F \right)^{-1} \Psi_{F} P_{t | 1:t}^F.
+\end{align}
+The issue here is that the covariance matrix $P_{t+1 | 1:t}^F$ is not necessarily invertible. If it is not invertible, then we cannot make use of proposition \ref{prop: cond}. In the case where it is invertible then we can proceed the following way.
+By induction, assume that the smoothing distribution at time $t+1$ is known to be Gaussian, i.e. 
+$$\vec{F}_{t+1} \vert \tilde{X}_{1:T} \sim \mathcal N \left( \mu_{t+1 | 1:T}^F, P_{t+1 | 1:T}^F \right).$$
+By proposition \ref{prop: joint} it follows that the pairwise marginal smoothing distribution is Gaussian, i.e.
+\begin{equation}
+	\begin{pmatrix} \vec{F}_{t+1} \\ \vec{F}_{t} \end{pmatrix} 
+	\vert \tilde{X}_{1:T} \sim 
+	\mathcal N \left( \begin{pmatrix} \mu_{t+1 | 1:T}^F \\ \mu_{t | 1:T}^F \end{pmatrix},
+	\begin{pmatrix} 
+		P_{t+1 | 1:T}^F & P_{t+1 | 1:T}^F \Gamma_{t}^{\top} \\ 
+		\Gamma_{t} P_{t+1 | 1:T}^F & P_{t | 1:T}^F
+	\end{pmatrix} \right),
+\end{equation}
+with 
+\begin{equation}
+	\begin{aligned}
+		\mu_{t | 1:T}^F &= \mu_{t | 1:t}^F + \Gamma_{t} \left( \mu_{1+T | 1:T}^F - \Phi \mu_{t | 1:t}^F \right), \\
+		P_{t | 1:T}^F &= \Gamma_{t} P_{t+1 | 1:T}^F  \Gamma_{t}^{\top} + P, \\
+		\Gamma_{t} &= P_{t | 1:t}^F \Phi^{\top} \left( P_{t+1 | 1:t}^F \right)^{-1}
+	\end{aligned}
+\end{equation}
+and from this the marginal smoothing distribution can be obtained easily.
+
+\subsection{Variational Kalman Smoother Derivation}
+As stated in \cite{bealVariationalAlgorithmsApproximate}, we can replace the parameters with their expectations under the variational density $q_{ \bf \Theta }$. 
+
+\clearpage
+\section{VB Time-series Factor Analysis}
+Consider the simplest factor analysis model for which there are $N$ observations, $X_n$. The observations are assumed to be generated by a single common factor $F$ and $N$ observation-specific errors $\epsilon_n$ through the equation
+\begin{equation}
+	X_{n, t} = \lambda_n F_t + \epsilon_t, \quad n = 1, \ldots, N, \quad t = 1, \ldots, T.
+\end{equation}
+In \cite{gewekeDynamicFactorAnalysis1977} it is noted that in most applications the observations represent cross-sectional samples, so the assumption that the observations are uncorrelated across $t$ is generally valid. However, with time series observations this is usually an invalid assumption. Thus, in general,  $X_{n, t}$ and $X_{n, t-s}$ are correlated. 
+
+Many applications of the orthogonal FAM involve cross-sectional data where the observations are assumed to be independent and identically distributed, that is, ${\bf X}_s$ and ${\bf X}_t$ are independe However, in time series applications this assumption is not valid because time observations are generally dependent over time. 
+
+A simple FAM is the orthogonal factor model. A $N$-dimensional observation ${\bf X}_t = \left( X_{1 t}, X_{2 t}, \ldots, X_{N t} \right)^{\top}$ that is weakly stationary with mean ${\bm \mu} = \left( \mu_1, \mu_2, \ldots, \mu_N \right)^{\top}$ and variance ${\bm \Omega}$ is generated by a small number of $K$ unobservable variables, $F_{i t}, i = 1, 2, \ldots, K$, and $N$ observation-specific noises, $e_{n t}, n = 1, 2, \ldots, N$, by the equation
+\begin{equation}
+	{\bf X}_t - {\bm \mu} = {\bm \Lambda} {\bf F}_t + {\bf u}_t \label{orthog.fa.model},
+\end{equation}
+where ${\bf F}_t = \left( F_{1 t}, F_{2 t}, \ldots, F_{K t} \right)^{\top}$ is a vector of common factors, ${\bm \Lambda} = \left( \lambda_{n i} \right)$ is a $N \times K$ matrix of factor loadings, and ${\bf u}_t = \left( e_{1 t}, e_{2 t}, \ldots, e_{N t} \right)^{\top}$ is a vector of idiosyncratic errors. 
+The orthogonal FAM has some unique assumptions.
+Firstly, it is assumed that the common factors have mean zero, unit variance, and are uncorrelated, that is, $\mathbb{E} \left( {\bf F}_t \right) = {\bm 0}$ and $\text{Var} \left( {\bf F}_t \right) = {\bm I}_K$.
+Secondly, the idiosyncratic errors have mean zero and are uncorrelated, that is,  $\mathbb{E} \left( {\bf u}_t \right) = {\bm 0}$ and $\text{Var} \left( {\bf u}_t \right) = {\bm \Sigma} = \operatorname{diag} \left\{ \sigma_1^2, \sigma_2^2, \ldots, \sigma_N^2 \right\}$.
+Lastly,  ${\bf F}_t$ and ${\bf u}_t$ are assumed to be independent, that is, $\text{Cov} \left( {\bf F}_t, {\bf u}_t \right) = {\bm 0}_{K \times N}$.
+Under these assumptions it follows that ${\bm \Omega} = {\bm \Lambda} {\bm \Lambda}^{\top} + {\bm \Sigma}$ and $\text{Cov} \left( {\bf X}_t, {\bf F}_t \right) = {\bm \Lambda}$
+
+We assign the following prior distributions to the model parameters:
+\begin{align}
+	p \left( {\bm \Lambda} \right) &= \prod_{n = 1}^N \mathcal{N} \left( {\bm \lambda}_n \,|\, 0, \frac{1}{a} \operatorname{Id} \right) \\
+	p \left( {\bm \Sigma} \right) &= \prod_{n = 1}^N \text{Scale-inv-} \chi^2 \left( \sigma^2_n \,|\, \nu, \tau^2 \right),
+\end{align}
+where $\bm \lambda_n$ represents a column vector that corresponds to the $n^{\text{th}}$ row in $\bm \Lambda$. The \textit{complete-data log-likelihood} is, thus, given by 
+\begin{equation}
+	\mathcal{L} \left( {\bf F}, {\bm \Theta} \right) \equiv \ln p \left( {\bf X}_{1:T}, {\bf F}_{1:T}, {\bm \Theta} \right) = \ln p \left( {\bf X}_{1:T} | {\bf F}_{1:T}, {\bm \Theta} \right) + \ln p \left( {\bf F}_{1:T} | {\bm \Theta} \right) + \ln p \left( {\bm \Theta} \right),
+\end{equation}
+where 
+\begin{align}
+	p \left( {\bf X}_{1:T} | {\bf F}_{1:T}, {\bm \Theta} \right) &\propto \det \left( {\bf \Sigma} \right)^{-\frac{T}{2}} \exp \left\{ -\frac{1}{2} \sum_{t = 1}^T \left( {\bf X}_t - {\bm \Lambda} {\bf F}_t \right)^{\top} {\bf \Sigma}^{-1} \left( {\bf X}_t - {\bm \Lambda} {\bf F}_t \right) \right\} \\
+	p \left( {\bf F}_{1:T} | {\bm \Theta} \right) &\propto \exp \left\{ -\frac{1}{2} \sum_{t = 1}^T {\bf F}_t^{\top} {\bf F}_t \right\} \\
+	p \left( {\bm \Theta} \right) &\propto \exp \left\{ - \frac{1}{2} \sum_{n = 1}^N a {\bm \lambda}_n^{\top} {\bm \lambda}_n \right\} \prod_{n = 1}^N \left( \sigma^2_n \right)^{-\left( 1 + \frac{\nu}{2} \right)} \exp \left\{ -\frac{\nu \tau^2}{2\sigma^2_n} \right\}.
+\end{align}
+Thus, the complete-data log-likelihood for the model is given as
+\begin{equation}
+	\begin{split}
+		\MoveEqLeft
+		\mathcal{L} \left( {\bf F}_{1:T}, {\bm \Theta} \right) = - \frac{T}{2} \ln \det ({\bf \Sigma}) - \frac{1}{2} \sum_{t = 1}^T \left( {\bf X}_t - {\bm \Lambda} {\bf F}_t \right)^{\top} {\bf \Sigma}^{-1} \left( {\bf X}_t - {\bm \Lambda} {\bf F}_t \right) - \frac{1}{2} \sum_{t = 1}^T {\bf F}_t^{\top} {\bf F}_t \\&- \frac{1}{2} \sum_{n = 1}^N a {\bm \lambda}_n^{\top} {\bm \lambda}_n -\sum_{n =1}^N \left( 1 + \frac{\nu}{2} \right) \ln \left( \sigma_n^2 \right) - \frac{1}{2} \sum_{n = 1}^N \frac{\nu \tau^2}{\sigma^2_n} + \text{const}.                  
+	\end{split}
+\end{equation}
+
+Let $q(\bm \Theta) = q(\bm \Lambda) q(\bm \Sigma)$. The VB framework sets $\ln q({\bf F}_{1:T}) \equiv \langle \mathcal{L} \left( {\bf F}_{1:T}, {\bm \Theta} \right) \rangle_{q(\bm \Theta)}$. When taking the expected value of the complete-data log-likelihood with respect to $q(\bm \Theta)$ we can treat any term that does not depend on ${\bf F}_{1:T}$ as constant. Thus
+\begin{equation}
+	\langle \mathcal{L} \left( {\bf F}_{1:T}, {\bm \Theta} \right) \rangle_{q(\bm \Theta)} = - \frac{1}{2} \sum_{t = 1}^T {\bf F}_t^{\top} \left(\operatorname{Id} + \langle \bm \Lambda^{\top} \bm \Sigma^{-1} \bm \Lambda \rangle \right) {\bf F}_t + \sum_{t = 1}^T {\bf X}_t^{\top} \langle \bm \Sigma^{-1} \rangle \langle \bm \Lambda \rangle {\bf F}_t + \text{const}
+\end{equation}
+and it follows that
+\begin{equation}
+	q({\bf F}_{1:T}) =  \prod_{t = 1}^T q \left( {\bf F}_t \right) = \prod_{t = 1}^T \mathcal{N} \left( {\bf F}_t \,|\, {\bf m}_{{\bf F} t}, {\bf P}_{\bf F} \right),
+\end{equation}
+where 
+\begin{align}
+	{\bf P}^{\bf F}&= \left( \operatorname{Id} + \langle  \bm \Lambda^{\top} \bm \Sigma^{-1} \bm \Lambda \rangle \right)^{-1} \\
+	{\bf m}_t^{\bf F} &= {\bf P}^{\bf F} \langle \bm \Lambda \rangle^{\top} \langle \bm \Sigma^{-1} \rangle {\bf X}_t.
+\end{align}
+Note that 
+\begin{equation}
+	 \langle  \bm \Lambda^{\top} \bm \Sigma^{-1} \bm \Lambda \rangle = \sum_{n = 1}^N \langle \frac{1}{\sigma^2_n}\rangle \langle {\bm \lambda}_n {\bm \lambda}_n^{\top}  \rangle.
+\end{equation}
+
+$\ln q({\bm \Lambda}) \equiv \langle \mathcal{L} \left( {\bf F}_{1:T}, {\bm \Theta} \right) \rangle_{-\bm \Lambda}$, where the expected value is taken with respect to $q({\bf F}_{1:T}) q(\bm \Sigma)$ and any term that does not depend on $\bm \Lambda$ is treated as constant. Thus
+\begin{equation}
+	\langle \mathcal{L} \left( {\bf F}_{1:T}, {\bm \Theta} \right) \rangle_{-\bm \Lambda} = \sum_{n = 1}^N \left[ -\frac{1}{2} {\bm \lambda}_n^{\top} \left( \langle \frac{1}{\sigma_n^2} \rangle \sum_{t = 1}^T \langle {\bf F}_t {\bf F}_t^{\top} \rangle \right) {\bm \lambda}_n + {\bm \lambda}_n^{\top} \langle \frac{1}{\sigma_n^2} \rangle \sum_{t = 1}^T X_{nt} \langle {\bf F}_t \rangle \right] + \text{const.}
+\end{equation}
+and it follows that 
+\begin{equation}
+	q(\bm \Lambda) = \prod_{n = 1}^N \mathcal{N} \left( {\bm \lambda}_n | {\bf m}_n^{\bm \lambda}, {\bf P}_n^{\bm \lambda} \right),
+\end{equation}
+where
+\begin{align}
+	{\bf P}_n^{\bm \lambda} &= \left( \langle \frac{1}{\sigma_n^2} \rangle \sum_{t = 1}^T \langle {\bf F}_t {\bf F}_t^{\top} \rangle \right)^{-1} \\
+	{\bf m}_n^{\bm \lambda} &= {\bf P}_n^{\bm \lambda} \langle \frac{1}{\sigma_n^2} \rangle \sum_{t = 1}^T X_{nt} \langle {\bf F}_t \rangle
+\end{align}
+
+$\ln q({\bm \Sigma}) \equiv \langle \mathcal{L} \left( {\bf F}_{1:T}, {\bm \Theta} \right) \rangle_{-\bm \Sigma}$, where the expected value is taken with respect to $q({\bf F}_{1:T}) q(\bm \Lambda)$ and any term that does not depend on $\bm \Sigma$ is treated as constant. Thus
+\begin{equation}
+	\begin{split}
+		\MoveEqLeft
+		\langle \mathcal{L} \left( {\bf F}_{1:T}, {\bm \Theta} \right) \rangle_{-\bm \Sigma} = - \left( 1 + \frac{T + \nu}{2} \right) \sum_{n = 1}^N \ln \left( \sigma_n^2 \right) \\ 
+		&- \frac{1}{2} \sum_{n = 1}^N \frac{1}{\sigma_n^2} \left( \nu \tau^2 + \sum_{t = 1}^T \langle \left( X_{nt} - {\bm \lambda}_n^{\top} {\bf F}_t \right)^2 \rangle \right) + \text{const.}
+	\end{split}
+\end{equation}
+and it follows that 
+\begin{equation}
+	q({\bm \Sigma}) = \prod_{n = 1}^N \text{Scale-inv-}\chi^2 \left( \sigma_n^2 | \nu^{\sigma}, \tau_n^2 \right),
+\end{equation}
+where
+\begin{align}
+	\nu^{\sigma} &= T + \nu \\
+	\tau_n^2 &= \frac{\nu \tau^2 + \sum_{t = 1}^T \langle \left( X_{nt} - {\bm \lambda}_n^{\top} {\bf F}_t \right)^2 \rangle}{\nu^{\sigma}} 
+\end{align}
+
+Below we show the updates.
+
+The ELBO for the model consists of the expected value of the difference between the full joint density of the observations, factors, and parameters and the variational density, where the expectation is taken under the variational density, i.e.
+
+\begin{align}
+	\text{ELBO}(q) 
+		&= \mathbb{E}_q \left[ \log p \left( \bf X, F, {\bm \Lambda}, {\bm \Sigma} \right) \right] - \mathbb{E}_q  \left[ \log q \left( {\bf F}_{1:T}, {\bf {\bm \Lambda}, {\bm \Sigma}} \right) \right] \\
+	\begin{split}
+		&= \mathbb{E}_q \left[ \log p \left( \bf X \,|\, F, {\bm \Lambda}, {\bm \Sigma} \right) \right] + \mathbb{E}_q \left[ \log p \left( \bf F \right) \right] + \mathbb{E}_q \left[ \log p \left( \bm \Lambda \right) \right] + \mathbb{E}_q \left[ \log p \left( \bm \Sigma \right) \right] \\
+		&\qquad - \mathbb{E}_q \left[ \log q \left( {\bf F} \right) \right]- \mathbb{E}_q \left[ \log q \left( {\bm \Lambda} \right) \right]- \mathbb{E}_q \left[ \log q \left( {\bm \Sigma} \right) \right].
+	\end{split}
+\end{align}
+It would be best to evaluate the ELBO term-by-term.
+\begin{align}
+	\begin{split}
+		\mathbb{E}_q \left[ \log p \left( \bf X \,|\, F, {\bm \Lambda}, {\bm \Sigma} \right) \right] 
+			&= - \frac{NT}{2} \log (2\pi) - \frac{T}{2} \mathbb{E}_q \left[ \log \det \left( \bm \Sigma \right) \right] \\
+			&\hspace{2em}- \frac{1}{2} \sum_{t=1}^T {\bf X}_t^{\top} \mathbb{E}_q \left[ \bm \Sigma^{-1} \right] {\bf X}_t + \sum_{t=1}^T {\bf X}_t^{\top} \mathbb{E}_q \left[ {\bm \Sigma}^{-1} {\bm \Lambda} {\bf F}_t \right] \\
+			&\hspace{2em}- \frac{1}{2} \sum_{t=1}^T \mathbb{E}_q \left[ {\bf F}_t^{\top} {\bm \Lambda}^{\top} {\bm \Sigma}^{-1} {\bm \Lambda} {\bf F}_t \right]
+	\end{split} \\
+	\mathbb{E}_q \left[ \log p \left( {\bf F} \right) \right] &= - \frac{K}{2} \log (2\pi) - \frac{1}{2} \sum_{t=1}^T \mathbb{E}_q \left[ {\bf F}_t^{\top} {\bf F}_t \right] \\
+	\mathbb{E}_q \left[ \log p \left( {\bm \Lambda} \right) \right] &= - \frac{KN}{2} \log (2\pi a) - \frac{a}{2} \sum_{n=1}^N \mathbb{E}_q \left[ {\bm \lambda}_n^{\top} {\bm \lambda}_n \right] \\
+	\begin{split}
+		\mathbb{E}_{\bm \Sigma} \left[ \log p \left( \bm \Sigma \right) \right] 
+			&= - \frac{\nu}{2} \log \left( \frac{\nu \tau^2}{2} \right) - \log \Gamma \left( \frac{\nu}{2} \right) - \frac{\nu \tau^2}{2} \mathbb{E}_q \left[ \frac{1}{\sigma_n^2} \right] \\
+			&\hspace{1em}- \left( 1 + \frac{\nu}{2} \right) \mathbb{E}_q \left[ \log \left( \sigma_n^2 \right) \right]	
+	\end{split} \\
+	\begin{split}
+		\mathbb{E}_{\bf F} \left[ \log q \left( {\bf F} \right) \right] &= - \frac{KT}{2} \log(2\pi) - \frac{T}{2} \log \det \left({\bf P^F} \right) \\
+		&\hspace{1em}- \frac{1}{2} \sum_{t=1}^T \mathbb{E}_q \left[ \left( {\bf F}_t - {\bf m}_t^F \right)^{\top} \left( {\bf P}^{\bf F} \right)^{-1} \left( {\bf F}_t - {\bf m}_t^F \right) \right]
+	\end{split} \\
+	\begin{split}
+		\mathbb{E}_{\bm \Lambda} \left[ \log q \left( {\bm \Lambda} \right) \right] 
+		&= -\frac{NK}{2} \log(2\pi) - \frac{1}{2} \sum_{t=1}^T \log \det \left( {\bf P}^{\bm \lambda}_n \right) \\
+		&\hspace{1em}- \frac{1}{2} \sum_{n=1}^N \mathbb{E}_q \left[ \left( {\bm \lambda}_n - {\bf m}_n^{\bm \lambda} \right)^{\top} \left( {\bf P}_n^{\bm \lambda} \right) \left( {\bm \lambda}_n - {\bf m}_n^{\bm \lambda} \right) \right] 
+	\end{split} \\
+	\begin{split}	
+		\mathbb{E}_{\bm \Sigma} \left[ \log q \left( {\bm \Sigma} \right) \right] 
+		&= \frac{\nu_{\sigma}}{2} \sum_{n = 1}^N \log \left( \frac{\nu_{\sigma} \tau_n^2}{2} \right) - N \log \Gamma \left( \frac{\nu_{\sigma}}{2} \right) - \frac{\nu_{\sigma}}{2} \sum_{n=1}^N \tau_n^2 \mathbb{E}_q \left[ \frac{1}{\sigma_n^2} \right] \\
+		&\hspace{1em} - \left( 1 + \frac{\nu_{\sigma}}{2} \right) \sum_{n=1}^N \mathbb{E}_q \left[ \log \left( \sigma_n^2 \right) \right]
+	\end{split}
+\end{align}
+
+\begin{align}
+	\mathbb{E}_q \left[ \log \det \left( {\bm \Sigma} \right) \right] &= \sum_{n=1}^N \left[ \log \left( \frac{\nu_{\sigma} \tau_n^2}{2} \right) - \psi \left( \frac{\nu_{\sigma}}{2} \right) \right] \\
+	\mathbb{E}_q \left[ {\bm \Sigma}^{-1} \right] &= \operatorname{diag} \left( \frac{1}{\tau_1^2},\, \frac{1}{\tau_2^2},\, \ldots,\, \frac{1}{\tau_N^2} \right) \\
+	\mathbb{E}_q \left[ \right]
+\end{align}
+The algorithm to obtain the variational approximation to the poster, $q^{\star} \left( {\bf F}_{1:T}, {\bm \Lambda}, {\bm \Sigma} \right)$, is presented below:
+
+\begin{algorithm}[H]
+	\SetKwInput{Input}{Input}
+	\SetKwInput{Output}{Output}
+	\SetKwInput{Initialize}{Initialize}
+	\SetAlgoLined
+	\DontPrintSemicolon
+	\Input{ Data ${\bf X}_{1:T}$, number of factors $K$, prior parameters}
+	\Output{Variational densities}
+	\Initialize{Variational parameters}
+	\While{the \textit{ELBO} has not converged}{
+		Set ${\bf P}_{\bf F} \leftarrow \left( \text{Id}_K + \sum_{n=1}^N \frac{1}{\tau_n^2} \left( {\bf P}_{\bm \lambda} + {\bf m}_{{\bm \lambda} n} {\bf m}_{{\bm \lambda} n}^{\top} \right) \right)^{-1}$\;
+		\For{$t \in \left\{ 1, 2, \ldots, T \right\}$}{
+			Set  ${\bf m}_{{\bf F} t} \leftarrow {\bf P}_{\bf F} \mathbb{E}_{q} \left[ {\bm \Lambda}^{\top} \right] \operatorname{diag} \left( \frac{1}{\tau_1^2}, \ldots, \frac{1}{\tau_N^2} \right) {\bf X}_t $\;
+		}
+		\For{$n \in \left\{ 1, 2, \ldots, N \right\}$}{
+			Set ${\bf P}_{{\bm \lambda} n}^{-1} \leftarrow \left( \frac{1}{\tau_n^2} \sum_{t=1}^T \left( {\bf P}_{{\bf F}} + {\bf m}_{{\bf F} t} {\bf m}_{{\bf F} t}^{\top} \right) \right)^{-1}$ \; 
+			Set ${\bf m}_{{\bm \lambda} n} \leftarrow \frac{1}{\tau_n^2} {\bf P}_{{\bm \lambda} n}  \sum_{t=1}^T X_{nt} {\bf m}_{{\bf F} t}$ \;
+			Set $\tau_n^2 \leftarrow \frac{1}{T + \nu_0} \left( \nu_0 \tau_0^2 + \sum_{t=1}^T X_{nt}^2 - 2 \sum_{t=1}^T X_{nt} {\bf m}_{{\bm \lambda} n}^{\top} {\bf m}_{{\bf F} t} + \operatorname{tr} \left[ \left( {\bf P}_{\bm \lambda} + {\bf m}_{{\bm \lambda} n} {\bf m}_{{\bm \lambda} n}^{\top} \right) \sum_{t=1}^T \left( {\bf P}_{{\bf F}} + {\bf m}_{{\bf F} t} {\bf m}_{{\bf F} t}^{\top} \right) \right] \right)$ \;
+		}
+		Compute $\operatorname{ELBO} \left( q \right)$
+  	}
+  	\Return $q \left( {\bf F}_{1:T}, {\bm \Lambda}, {\bm \Sigma} \right)$ \;
+ 	\caption{Variational updates for the time series factor analysis model}
+\end{algorithm}
+
+\section{Dynamic factor model with $\text{VAR}(1)$ errors}
+We begin with a dynamic factor model for which a sequence ${\bf X} = \left( X_1, X_2, \ldots, X_T \right)$ of $N$-dimensional real-valued observation vectors, which we will denote by $X_{1:T}$, is modeled by assuming that at each time step $t$, $X_t$ is generated from a $k$-dimensional real-valued latent factor $F_t$, and the factors in the sequence ${\bf F} = \left( F_0, F_1, \ldots, F_T \right)$ follow a first-order Gaussian  vector autoregressive process. Also, we assume that the observation error process is a first-order vector autoregressive process. 
+
+where $\Psi_{F1} \, (k \times k)$ is the matrix of autoregressive coefficients of the latent factors, $\Lambda_F \, (N \times k)$ is the factor loadings matrix, $\Psi_{X1} \, (N \times N)$ is the matrix of autoregressive coefficients of the observation error process, $\Sigma_F \, (k \times k)$ is the covariance matrix for the latent factor noise, and  $\Sigma_X \, (N \times N)$ is the covariance matrix of the observation error process noise.
+
+By specifying that the starting point of the latent factor process, $F_0$, this way we are forcing the marginal distribution of the process at every time point to have the same marginal distribution, which is also the stationary distribution of the latent factor process. That is, for each $t$ we have that 
+\begin{equation}
+	F_t \sim \mathcal N \left( 0, \left( \operatorname{Id} - \Psi_{F1}^2 \right)^{-1} \Sigma_F \right)
+\end{equation}
+
+We can write the joint density of the observations, latent factors, and model parameters as
+\begin{equation}
+	p \left( X_{1:T}, F_{0:T}, {\bf \Theta} \right) = p \left( X_{1:T} | F_{0:T}, {\bf \Theta}  \right) 	p \left( F_{0:T} | {\bf \Theta} \right)  p \left( {\bf \Theta} \right) 
+\end{equation}
+where
+\begin{equation}
+	p \left( {\bf \Theta} \right) = p \left( \Psi_{F1} \right) p \left( \Lambda_F \right) p \left( \Psi_{X1} \right) p \left( \Sigma_F \right) p \left( \Sigma_X \right).
+\end{equation}
+We can represent the observation error process in $(\ref{error.dyn})$ as
+\begin{equation}
+	\Psi_{X}(L) e_{Xt} = \epsilon_{Xt},
+\end{equation}
+where 
+\begin{equation*}
+	\Psi_{X}(L) = \operatorname{Id} - \Psi_{X1} L
+\end{equation*}
+is a matrix polynomial in the lag operator and $L a_t = a_{t-1}$. Applying the same matrix polynomial to the observation equation $(\ref{obs.eq})$ gives a new observation equation
+\begin{equation}
+	X_t = \Psi_{X1} X_{t-1} + \Lambda_F F_t - \Psi_{X1} \Lambda_F F_{t-1} + \epsilon_{Xt} \label{new.obs.eq}, \quad t = 1, 2, \ldots, T.
+\end{equation}
+It is clear from the new observation equation that $X_1$ will depend upon the unobserved value $X_0$ which must be specified in some way. We assume that $X_0$6*e can write the likelihood as 
+\begin{equation}
+	p \left( X_{1:T} | F_{0:T}, {\bf \Theta}  \right) = \prod_{t=1}^T p \left( X_t | X_{t-1}, F_{t-1}, F_t, {\bf \Theta} \right),
+\end{equation}
+where $\Theta = \left\{ \Psi_{X1}, \Psi_{F1}, \Lambda_F, \Sigma_X, \Sigma_F, X_0 \right\}$ and the distribution of $X_t$ conditional on $X_{t-1}, F_{t-1}, F_t, {\bf \Theta}$ is Gaussian. Since the latent factors are a first-order vector autoregressive process, we can express their joint density as
+\begin{equation}
+	p \left( F_{0:T} | {\bf \Theta} \right) = p \left( F_0 | {\bf \Theta} \right) \prod_{t=1}^T p \left( F_t | F_{t-1}, {\bf \Theta} \right),
+\end{equation}
+where $F_t$ conditional on $F_{t-1}, {\bf \Theta}$ is Gaussian with mean $\Psi_{F1} F_{t-1}$ and variance $\Sigma_F$.
+
+It will be helpful to know the natural parameters of the complete-data likelihood 
+\begin{equation}
+	p \left( X_{1:T}, F_{0:T} | \Theta \right) = p \left( X_{1:T} | F_{0:T}, \Theta \right) p \left( F_{0:T} | \Theta \right).
+\end{equation}
+
+The Gaussian pdfs seen in (\ref{gauss-pdfs}) can be put into exponential family form while ignoring constants to determine the natural parameters:
+\begin{align}
+	\mathcal N \left( F_0 | 0, \bar{\Sigma}_F \right) &\propto \det \left( \bar{\Sigma}_F \right)^{-\frac12} \exp \left\{ -\frac12 F_0^{\top} \bar{\Sigma}_F^{-1} F_0 \right\} \nonumber \\
+	&= \det \left( \bar{\Sigma}_F \right)^{-\frac12} \exp \left\{ -\frac12 \Tr \left( \bar{\Sigma}_F^{-1} F_0 F_0^{\top} \right) \right\} \nonumber \\
+	&= \det \left( \bar{\Sigma}_F \right)^{-\frac12} \exp \left\{ -\frac12 \operatorname{vec} \left( \bar{\Sigma}_F^{-1} \right)^{\top} \operatorname{vec} \left( F_0 F_0^{\top} \right) \right\}
+\end{align} 
+
+\begin{align}
+	\mathcal N \left( X_t | \Lambda_F F_t, \bar{\Sigma}_X \right) & \propto \det \left( \bar{\Sigma}_X \right)^{-\frac12} \exp \left\{ -\frac12 \left( X_t - \Lambda_F F_t \right)^{\top} \bar{\Sigma}_X^{-1}  \left( X_t - \Lambda_F F_t \right) \right\} \nonumber \\
+	\begin{split}
+		&= \det \left( \bar{\Sigma}_X \right)^{-\frac12} \exp \bigg\{ -\frac12 \Tr \Big[ \bar{\Sigma}_X^{-1}  X_t X_t ^{\top} + \Lambda_F^{\top}  \bar{\Sigma}_X^{-1} \Lambda_F F_t F_t^{\top} \\
+		&\qquad - 2 \Lambda_F^{\top}  \bar{\Sigma}_X^{-1} X_t F_t^{\top} \Big] \bigg\} \\
+		&= \det \left( \bar{\Sigma}_X \right)^{-\frac12} \exp \bigg\{ -\frac12 \Big[ \operatorname{vec} \left( \bar{\Sigma}_X^{-1} \right)^{\top} \operatorname{vec} \left( X_t X_t^{\top} \right) \\
+		&\qquad + \operatorname{vec} \left( \Lambda_F^{\top}  \bar{\Sigma}_X^{-1} \Lambda_F \right)^{\top} \operatorname{vec} \left( F_t F_t^{\top} \right) \\
+		&\qquad -2 \operatorname{vec} \left( \Lambda_F^{\top} \bar{\Sigma}_X^{-1} \right)^{\top} \operatorname{vec} \left( X_t F_t^{\top} \right) \Big] \bigg\}
+	\end{split}
+\end{align}
+
+\begin{align}
+	\mathcal N \left( F_t | \Psi F_{t-1}, \Sigma_F \right)	&\propto \det \left( \Sigma_F \right)^{-\frac12} \exp \left\{ \left( F_t - \Psi F_{t-1} \right)^{\top} \Sigma_F^{-1} \left( F_t - \Psi F_{t-1} \right) \right\} \nonumber \\
+	\begin{split}
+		&= \det \left( \Sigma_F \right)^{-\frac12} \exp \bigg\{ -\frac12 \Tr \Big[ \Sigma_F^{-1}  F_t F_t ^{\top} + \Psi \Sigma_F^{-1} \Psi F_{t-1} F_{t-1}^{\top} \\
+		&\qquad - 2 \Psi \Sigma_F^{-1} F_t F_{t-1}^{\top} \Big] \bigg\} \\
+		&= \det \left( \Sigma_F \right)^{-\frac12} \exp \bigg\{ -\frac12 \Big[ \operatorname{vec} \left( \Sigma_F^{-1} \right)^{\top} \operatorname{vec} \left( F_t F_t^{\top} \right) \\
+		&\qquad + \operatorname{vec} \left( \Psi \Sigma_F^{-1} \Psi \right)^{\top} \operatorname{vec} \left( F_{t-1} F_{t-1}^{\top} \right) \\
+		&\qquad -2 \operatorname{vec} \left( \Psi \Sigma_F^{-1} \right)^{\top} \operatorname{vec} \left( F_t F_{t-1}^{\top} \right) \Big] \bigg\}
+	\end{split}
+\end{align}
+Each of the pdfs that make up the product in (\ref{gauss-pdfs}) are in the exponential family. The product of exponential family pdfs are exponential family pdfs (possibly unnormalized). Therefore, it follows that the complete-data natural parameters are given by
+\begin{equation}
+	\phi \left( \Theta \right) = \mleft[ \bar{\Sigma}_F^{-1},\, \bar{\Sigma}_X^{-1},\, \Lambda_F^{\top} \bar{\Sigma}_X^{-1} \Lambda_F,\, \bar{\Sigma}_X^{-1} \Lambda_F,\, \Sigma_F^{-1},\, \Psi \Sigma_F^{-1} \Psi, \Sigma_F^{-1} \Psi \mright].
+\end{equation}
+
+
+\section{Variational Densities}
+\begin{align}
+	q_{\Psi_{X1}} \left( \Psi_{X1} \right) &= \prod_{n = 1}^N \mathcal N \left( \psi_{Xn} | \mathbb{E} \mleft[ B_{(nn)} \mright] \mathbb{E} \mleft[ A_{(nn)} \mright]^{-\frac12}, \mathbb{E} \mleft[ A_{(nn)} \mright]^{-1} \right) \\
+	q_{\Psi_{F1}} \left( \Psi_{F1} \right) &= \prod_{k = 1}^k \mathcal N \left( \psi_{Fk} | \mathbb{E} \mleft[ D_{(kk)} \mright] \mathbb{E} \mleft[ C_{(kk)} \mright]^{-\frac12}, \mathbb{E} \mleft[ C_{(kk)} \mright]^{-1} \right) \\
+	q_{\Sigma_X} \left( \Sigma_X \right) &= \prod_{n = 1}^N \text{Scale-inv-} \chi^2 \left( \sigma_{Xn}^2 | \nu_X + T, \frac{ \mathbb{E} \mleft[ H_{(nn)} \mright] + \nu_X \tau_X^2 }{ T + \nu_X } \right) \\
+	q_{\Sigma_F} \left( \Sigma_X \right) &= \prod_{k = 1}^k \text{Scale-inv-} \chi^2 \left( \sigma_{Fk}^2 | \nu_F + T, \frac{ \mathbb{E} \mleft[ J_{(nn)} \mright] + \nu_F \tau_F^2 }{ T + \nu_F } \right) \\
+	q_{\Lambda_F} \left( \Lambda_F \right) = ???
+\end{align}
+where 
+\begin{align}
+	A &= \Sigma_X^{-1} \sum_{t = 1}^T \left( X_{t-1} X_{t-1}^{\top} + \Lambda_F F_{t-1} F_{t-1}^{\top} \Lambda_F^{\top} + 2 F_{t-1}^{\top} \Lambda_F^{\top} \right) + \frac{1}{\sigma_0^2} \operatorname{Id} \\
+	B &= \Sigma_X^{-1} \sum_{t = 1}^T \left( X_{t} X_{t-1}^{\top} - X_{t} F_{t-1}^{\top} \Lambda_F^{\top} + \Lambda_F F_{t} F_{t-1}^{\top} \Lambda_F^{\top} \right) + \frac{\mu_0}{\sigma_0^2}  \operatorname{Id} \\
+	C &= \Sigma_F^{-1} \sum_{t = 1}^T F_{t-1} F_{t-1}^{\top} + \frac{1}{\sigma_{\Phi}^2} \operatorname{Id} \\
+	D &= \Sigma_F^{-1} \sum_{t = 1}^T F_t F_{t-1}^\top + \frac{\mu_{\Phi}}{\sigma_{\Phi}^2} \operatorname{Id} \\
+	H &=\sum_{t=1}^T \left( X_t - \Psi_{X1} X_{t-1} - \Lambda_F F_t + \Psi_{X1} \Lambda_F F_{t-1} \right)  \left( X_t - \Psi_{X1} X_{t-1} - \Lambda_F F_t + \Psi_{X1} \Lambda_F F_{t-1} \right)^{\top} \\
+	J &= \sum_{t=1}^T \left( F_t - \Psi_{F1} F_{t-1} \right) \left( F_t - \Psi_{F1} F_{t-1} \right)^{\top}
+\end{align}
+
