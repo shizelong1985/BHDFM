@@ -1,0 +1,52 @@
+\documentclass[12pt]{report}
+\usepackage{geometry}
+\usepackage{utathesis, listings, color, float, algpseudocode, oldgerm, mathrsfs, microtype, latexsym, etoolbox}
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[style=1]{mdframed}
+\usepackage{graphicx, amssymb, amsmath, amsfonts, mathtools, amsthm, nth, enumitem, bm}
+\usepackage[ruled, vlined]{algorithm2e}
+\usepackage[nottoc]{tocbibind}
+\usepackage{nomencl}
+	\makenomenclature
+	\renewcommand{\nomname}{List of Symbols}
+\usepackage{xcolor}
+\usepackage{comment} % for multilined comments
+\usepackage{mleftright} % for '\mleft' and '\mright' macros
+
+\input macros.tex
+
+\begin{document}
+\input{psfig.sty}
+\begin{comment}
+	{\graduationmonth{.}
+	\graduationyear{.}
+	\defensedate{.}
+	\author{Anthony Maurice Thomas, Jr.}
+	\committee{Li Wang}{Andrzej Korzeniowski}{Shan Sun-Mitchell}{Suvra Pal}{}
+	\title{Bayesian hierarchical dynamic factor models}
+	\titlepage}
+\end{comment}
+
+\begin{center}
+	 {\bf DRAFT:} Bayesian hierarchical dynamic factor models \\
+	Anthony Maurice Thomas, Jr.
+\end{center} 
+\newpage
+
+\tableofcontents
+\addtocontents{toc}{\noindent\mbox{Chapter}\hfill\mbox{Page}}%
+
+\input{chapter1.tex}
+\input{chapter2.tex}
+\input{chapter3.tex}
+\input{chapter4.tex}
+\input{miscellaneous.tex}
+\input{appendix.tex}
+
+\clearpage
+\renewcommand{\bibname}{REFERENCES}
+\bibliographystyle{plain}
+\bibliography{ref.bib}
+
+\end{document}
