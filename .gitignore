@@ -1,0 +1,29 @@
+# RStudio files
+.Rproj.user
+
+# History files
+.Rhistory
+.Rapp.history
+
+# Session Data files
+.RData
+
+# User-specific files
+.Ruserdata
+
+# knitr and R markdown default cache directories
+*_cache/
+/cache/
+
+# R Environment Variables
+.Renviron
+
+dataverse_files/
+misc/
+references/
+/.tmp.driveupload/
+
+**/.DS_Store
+*.pdf
+*.jpg
+*.png
