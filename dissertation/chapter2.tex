@@ -1,0 +1,66 @@
+
+\chapter{Variational Bayesian inference}
+\section{Background}
+Variational Bayes is an algorithmic framework that aims to approximate intractable integrals that arise in Bayesian statistics. The goal is to approximate the posterior distribution over latent variables using optimization. This framework has been applied in various settings like machine learning, neural networks, artificial intelligence, and signal processing. In \cite{beal2003variational} a general framework for variational Bayesian learning of latent variable models is given by providing an extension to the EM algorithm for conjugate-exponential models. In \cite{blei2017variational} a framework for a Gaussian mixture model is provided.
+
+Let ${\bm X}$ denote a set of observations and ${\bm Z}$ denote a set of latent variables. Suppose these sets have a joint density $p \mleft( {\bm X}, {\bm Z} \mright)$. 
+This integral is often intractable in the sense that it either has no closed form solution or is too difficult to compute. 
+
+ The idea behind the variational Bayesian method is to approximate the posterior density by a simpler density. First, propose a family of approximate densities, say $\mathcal Q$, where each member $q \mleft( {\bm Z} \mright)$ is a density over the latent variables and serves as an approximation to the exact poster density. The goal is to find the member of that family that is closest to the posterior distribution. The measure of closeness is typically taken to be Kullback-Leibler (KL) divergence. Thus, inference becomes an optimization problem to find the optimal density in the family $\mathcal{Q}$. That is, the objective becomes to find $q^{\star} \mleft( {\bm Z} \mright)$ such that
+\begin{equation}
+	q^{\star} \mleft( {\bm Z} \mright) = 
+	\underset{q \mleft( {\bm Z} \mright) \in \mathcal{Q}}{\arg \min} \text{ KL} \mleft( q \mleft( {\bm Z} \mright) \, \vert \vert \, p \mleft( {\bm Z} \, \vert \, {\bm X} \mright) \mright).
+\end{equation} 
+KL-divergence is defined as
+\begin{equation}
+	\text{KL} \mleft( q \mleft( {\bm Z} \mright) \, \vert \vert \, p \mleft( {\bm Z} \, \vert \, {\bm X} \mright) \mright) = 
+	\mathbb{E} \mleft[ \log q({\bm Z}) \mright] - \mathbb{E} \mleft[ \log p \mleft( {\bm Z} \, \vert \, {\bm X} \mright) \mright],
+\end{equation}
+where the expected value is taken with respect to $q \mleft( {\bm Z} \mright)$. Using the definition of the posterior density we can represent the KL-divergence as
+\begin{align}
+	\text{KL} \mleft( q \mleft( {\bm Z} \mright) \, \vert \vert \, p \mleft( {\bm Z} \, \vert \, {\bm X} \mright) \mright) &= 
+	\mathbb{E} \mleft[ \log q({\bm Z}) \mright] - \mathbb{E} \mleft[ \log p \mleft( {\bm X}, {\bm Z} \mright) \mright] + \mathbb{E} \mleft[ \log p \mleft( {\bm X} \mright) \mright] \\
+	&= \mathbb{E} \mleft[ \log q({\bm Z}) \mright] - \mathbb{E} \mleft[ \log p \mleft( {\bm X}, {\bm Z} \mright) \mright] + \log p \mleft( {\bm X} \mright).
+\end{align}
+We can remove the expected value in the last term since $p \mleft( {\bm X} \mright)$ is not a function of ${\bm Z}$. This shows that the KL-divergence depends on $p \mleft( {\bm X} \mright)$. If the marginal evidence cannot be computed, then we cannot compute the KL-divergence and furthermore, it cannot be minimized directly. Alternatively, we work with an alternative objective function that involves what is called the evidence lower bound (ELBO). The ELBO is defined as
+\begin{equation}
+	\text{ELBO} \mleft( q \mright) = \mathbb{E} \mleft[ \log p \mleft( {\bm X}, {\bm Z} \mright) \mright] - \mathbb{E} \mleft[ \log q({\bm Z}) \mright].
+\end{equation}
+Thus the objective function can be represented as 
+\begin{equation}
+	\text{KL} \mleft( q \mleft( {\bm Z} \mright) \, \vert \vert \, p \mleft( {\bm Z} \, \vert \, {\bm X} \mright) \mright) = 
+	\log p \mleft( {\bm X} \mright) - \text{ELBO} \mleft( q \mright).
+\end{equation}
+If we can maximize the ELBO, then we are also minimizing the KL-divergence. Thus, the objective is to find $q^{\star} \mleft( {\bm Z} \mright)$ such that 
+\begin{equation}
+	q^{\star} \mleft( {\bm Z} \mright) = \underset{ q \mleft( {\bm Z} \mright) \in \mathcal{Q} }{\arg \max} \text{ ELBO} \mleft( q \mright).
+\end{equation}
+
+We now show that given an arbitrary density over ${\bm Z}$ called $q({\bm Z})$ we can derive a lower bound for log marginal evidence, and hence the marginal evidence.
+\begin{align}
+		\log p \mleft( {\bm X} \mright) 
+		&= \log \int p \mleft( {\bm X}, {\bm Z} \mright) \,d{\bm Z} \\
+		&= \log \int q \mleft( {\bm Z} \mright) \frac{ p \mleft( {\bm X}, {\bm Z} \mright) }{ q \mleft( {\bm Z} \mright) } \,d{\bm Z} \\
+		&= \log \mathbb{E} \mleft[ \frac{ p \mleft( {\bm X}, {\bm Z} \mright) }{ q \mleft( {\bm Z} \mright) } \mright] \\
+		&\geq \mathbb{E} \mleft[ \log \frac{ p \mleft( {\bm X}, {\bm Z} \mright) }{ q \mleft( {\bm Z} \mright) } \mright] \\
+		&= \mathbb{E} \mleft[ \log p \mleft( {\bm X}, {\bm Z} \mright) \mright] - \mathbb{E} \mleft[ \log q \mleft( {\bm Z} \mright) \mright] \\
+		&= \text{ELBO} \mleft( q \mright). 
+\end{align}
+Now it follows that 
+\begin{equation}
+	p \mleft( {\bm X} \mright) \geq \exp \mleft\{ \text{ELBO} \mleft( q \mright) \mright\}.
+\end{equation}
+
+\subsection{Mean-field variational Bayes}
+
+The mean-field approximation is a popular assumption used to make the VB framework easy to construct. There it is assumed that the latent variables can me partitioned into $M$ groups such that ${\bm Z} = \left({\bm Z}_1, \ldots, {\bm Z}_M \right)$  and that probability densities in $\mathcal{Q}$ factorize across the groups, that is,
+\begin{equation}
+	q \mleft( {\bm Z} \mright) = \prod_{m = 1}^M q \mleft( {\bm Z}_m \mright).
+\end{equation}
+We refer to algorithms that find optimal variational densities as variational algorithms.
+
+\section{Hierarchical Dynamic Model}
+
+\subsection{Prior Specification}
+
+\clearpage
