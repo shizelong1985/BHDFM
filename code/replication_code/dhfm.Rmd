@@ -34,6 +34,26 @@ fontsize: 11pt
 # endnote: no
 ---
 
+Packages
+```{r}
+# knitr         for
+# markdown      for
+# tidyverse     for piping commands with %>% 
+# R.matlab      for readMat function
+# matlab        for
+# mSTEM         for conv function
+# signal        for filter function
+# fBasics       for vec function
+
+list.pacs <- c("knitr", "markdown", "tidyverse", "R.matlab", "matlab", "mSTEM", "signal", 
+               "fBasics")
+sapply(list.pacs, require, character.only = TRUE)
+renv::snapshot()
+
+# Clear environment
+rm(list = ls())
+```
+
 ```{r setup}
 #| include = FALSE
 knitr::opts_chunk$set(cache = TRUE, message = FALSE, warning = FALSE,
@@ -45,24 +65,12 @@ knitr::opts_chunk$set(cache = TRUE, message = FALSE, warning = FALSE,
                           })
 ```
 
-Packages
-```{r}
-library(R.matlab)  # for readMat() function
-library(matlab)    # 
-library(mSTEM)     # for conv() function
-library(signal)    # for filter() function
-library(fBasics)   # for vec() function
-```
 
 # Introduction
 Factor modeling has become a widely used dimension reduction technique, but it is often criticized because the factors are difficult to interpret. Interpretation of the factors can be made easier when the data is organized into blocks. 
 
-# Data
-Use the `readMat()` function from the `R.matlab` package to load the `dhfm_data` m-file. The m-file contains the data stored as a cell array. The `readMat()` function converts data stored in a cell array into a list that contains some unnecessary nested lists. The code below fixes this issue.
-
 ```{r}
-data <- unlist(readMat('~/OneDrive\ -\ University\ of\ Texas\ at\ Arlington/BHDFM/R_code/replication_code/dhfm_data.mat')$bigZ.ns, recursive = FALSE)
-data <- lapply(1:length(data), function(i) if(is.list(data[[i]])) unlist(data[[i]], recursive = FALSE) else data[[i]])
+load("data/dhfm_data.Rdata")
 ```
 
 There are $T = 227$ time series observations on $N = 445$ variables. The data is organized into $B = 5$ blocks. Three of those blocks are organized into sub-blocks. $N_{b,s}$ denotes the number of variables in sub-block $s$ or block $b$. $S_b$ denotes the number of sub-blocks in block $b$, where where $b \in \left\{ 1, 2, \ldots, B \right\}$. $K_F$ denotes the number of common factors. $K_G(b)$ denotes the number of block-level factors in block $b$. $K_H(b, s)$ denotes the number of sub-block-level factors in sub-block $s$ of block $b$, where $s \in \left\{ 1, 2, \ldots, S_b \right\}$.
