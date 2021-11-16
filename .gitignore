@@ -5,8 +5,9 @@
 .Rhistory
 .Rapp.history
 
-# Session Data files
+# Session Data files except dhfm_data.RData
 .RData
+!data/dhfm_data.RData
 
 # User-specific files
 .Ruserdata
