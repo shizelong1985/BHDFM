@@ -108,95 +108,95 @@ l_H <- rep(0, B)
 
 ## Preliminary PCA
 
-I believe that the `nbplog()` function estimates the number of factors. 
-```{r}
-nbplog <- function(X, kmax, jj, DEMEAN) {
-    bigT <- nrow(X)
-    bigN <- ncol(X)
-    NT <- bigT * bigN
-    NT1 <- bigT + bigN
-    CT <- matrix(0, nrow = 1, ncol = kmax)
-    ii <- 1:kmax
-    if (jj == 1){
-        CT[1, ] <- log(NT / NT1) * ii * NT1 / NT
-    } else if (jj == 2) {
-        CT[1, ] <- (NT1 / NT) * log(min(bigN, bigT)) * ii
-    } else if (jj == 3) {
-        CT[1, ] <- ii * log(min(bigN, bigT)) / min(bigN, bigT)
-    } else if (jj == 4) {
-        CT[1, ] <- 2 * ii / bigT
-    } else if (jj == 5) {
-        CT[1, ] <- log(bigT) * ii / bigT
-    } else if (jj == 6) {
-        CT[1, ] <- 2 * ii * NT1 / NT
-    } else if (jj == 7) {
-        CT[1, ] <- log(NT) * ii * NT1 / NT
-    }
-    
-    if (DEMEAN == 2) {
-        X <- scale(X)
-    } else if (DEMEAN == 1) {
-        X <- scale(X, scale = FALSE)
-    } else {
-        X <- X
-    }
-    
-    IC1 <- matrix(0, nrow = nrow(CT), ncol = kmax + 1)
-    Sigma <- matrix(0, nrow = 1, ncol = kmax + 1)
-    if (bigT < bigN) {
-        SVD.XX <- svd(X %*% t(X))
-        ev <- SVD.XX$u
-        eigval <- SVD.XX$d
-        sumeigval <- cumsum(eigval) / sum(eigval)
-        Fhat0 <- sqrt(bigT) * ev
-        Lambda0 <- t(X) %*% Fhat0 / bigT
-    } else {
-        SVD.XX <- svd(t(X) %*% X)
-        ev <- SVD.XX$u
-        eigval <- SVD.XX$d
-        sumeigval <- cumsum(eigval) / sum(eigval)
-        Lambda0 <- sqrt(bigN) * ev
-        Fhat0 <- X %*% Lambda0 / bigN
-    }
-    
-    if (jj < 8) {
-        for (i in seq(kmax, 1, by = -1)) {
-            Fhat <- Fhat0[, 1:i]
-            lambda <- Lambda0[, 1:i]
-            chat <- Fhat %*% t(lambda)
-            ehat <- X - chat
-            Sigma[i] <- mean(base::sum(ehat^2 / bigT))
-            IC1[, i] <- log(Sigma[i]) + CT[, i]
-        }
-        Sigma[kmax + 1] <- mean(base::sum(X^2 / bigT))
-        IC1[, kmax + 1] <- log(Sigma[kmax + 1])
-        ic1 <- apply(t(IC1), 2, which.min)
-        ic1 <- ic1 * as.numeric(ic1 <= kmax)
-    }
-    
-    if (jj == 8) {
-        for (j in 1:length(sumeigval)) {
-            if (sumeigval[j] >= 0.5) {
-                ic1 <- j
-            }
-        }
-    }
-    Fhat <- Fhat0[, 1:kmax]
-    Lambda <- Lambda0[, 1:kmax]
-    chat <- Fhat %*% t(Lambda)
-    
-    ret.list <- list(ic1 = ic1, chat = chat, Fhat = Fhat, eigval = eigval)
-    return(ret.list)
-}
+<!-- I believe that the `nbplog()` function estimates the number of factors.  -->
+<!-- ```{r} -->
+<!-- nbplog <- function(X, kmax, jj, DEMEAN) { -->
+<!--     bigT <- nrow(X) -->
+<!--     bigN <- ncol(X) -->
+<!--     NT <- bigT * bigN -->
+<!--     NT1 <- bigT + bigN -->
+<!--     CT <- matrix(0, nrow = 1, ncol = kmax) -->
+<!--     ii <- 1:kmax -->
+<!--     if (jj == 1){ -->
+<!--         CT[1, ] <- log(NT / NT1) * ii * NT1 / NT -->
+<!--     } else if (jj == 2) { -->
+<!--         CT[1, ] <- (NT1 / NT) * log(min(bigN, bigT)) * ii -->
+<!--     } else if (jj == 3) { -->
+<!--         CT[1, ] <- ii * log(min(bigN, bigT)) / min(bigN, bigT) -->
+<!--     } else if (jj == 4) { -->
+<!--         CT[1, ] <- 2 * ii / bigT -->
+<!--     } else if (jj == 5) { -->
+<!--         CT[1, ] <- log(bigT) * ii / bigT -->
+<!--     } else if (jj == 6) { -->
+<!--         CT[1, ] <- 2 * ii * NT1 / NT -->
+<!--     } else if (jj == 7) { -->
+<!--         CT[1, ] <- log(NT) * ii * NT1 / NT -->
+<!--     } -->
 
-# Xb <- data[[1]]
-# Xb <- matrix(unlist(data[[1]]), nrow = nrow(Xb[[1]]))
-# tmp <- nbplog(Xb, 8, 2, 2)
-# ic_Gb <- tmp$ic1
-# chat_Gb <- tmp$chat
-# GX_b <- tmp$Fhat
-# eigval_Gb <- tmp$eigval
-```
+<!--     if (DEMEAN == 2) { -->
+<!--         X <- scale(X) -->
+<!--     } else if (DEMEAN == 1) { -->
+<!--         X <- scale(X, scale = FALSE) -->
+<!--     } else { -->
+<!--         X <- X -->
+<!--     } -->
+
+<!--     IC1 <- matrix(0, nrow = nrow(CT), ncol = kmax + 1) -->
+<!--     Sigma <- matrix(0, nrow = 1, ncol = kmax + 1) -->
+<!--     if (bigT < bigN) { -->
+<!--         SVD.XX <- svd(X %*% t(X)) -->
+<!--         ev <- SVD.XX$u -->
+<!--         eigval <- SVD.XX$d -->
+<!--         sumeigval <- cumsum(eigval) / sum(eigval) -->
+<!--         Fhat0 <- sqrt(bigT) * ev -->
+<!--         Lambda0 <- t(X) %*% Fhat0 / bigT -->
+<!--     } else { -->
+<!--         SVD.XX <- svd(t(X) %*% X) -->
+<!--         ev <- SVD.XX$u -->
+<!--         eigval <- SVD.XX$d -->
+<!--         sumeigval <- cumsum(eigval) / sum(eigval) -->
+<!--         Lambda0 <- sqrt(bigN) * ev -->
+<!--         Fhat0 <- X %*% Lambda0 / bigN -->
+<!--     } -->
+
+<!--     if (jj < 8) { -->
+<!--         for (i in seq(kmax, 1, by = -1)) { -->
+<!--             Fhat <- Fhat0[, 1:i] -->
+<!--             lambda <- Lambda0[, 1:i] -->
+<!--             chat <- Fhat %*% t(lambda) -->
+<!--             ehat <- X - chat -->
+<!--             Sigma[i] <- mean(base::sum(ehat^2 / bigT)) -->
+<!--             IC1[, i] <- log(Sigma[i]) + CT[, i] -->
+<!--         } -->
+<!--         Sigma[kmax + 1] <- mean(base::sum(X^2 / bigT)) -->
+<!--         IC1[, kmax + 1] <- log(Sigma[kmax + 1]) -->
+<!--         ic1 <- apply(t(IC1), 2, which.min) -->
+<!--         ic1 <- ic1 * as.numeric(ic1 <= kmax) -->
+<!--     } -->
+
+<!--     if (jj == 8) { -->
+<!--         for (j in 1:length(sumeigval)) { -->
+<!--             if (sumeigval[j] >= 0.5) { -->
+<!--                 ic1 <- j -->
+<!--             } -->
+<!--         } -->
+<!--     } -->
+<!--     Fhat <- Fhat0[, 1:kmax] -->
+<!--     Lambda <- Lambda0[, 1:kmax] -->
+<!--     chat <- Fhat %*% t(Lambda) -->
+
+<!--     ret.list <- list(ic1 = ic1, chat = chat, Fhat = Fhat, eigval = eigval) -->
+<!--     return(ret.list) -->
+<!-- } -->
+
+<!-- # Xb <- data[[1]] -->
+<!-- # Xb <- matrix(unlist(data[[1]]), nrow = nrow(Xb[[1]])) -->
+<!-- # tmp <- nbplog(Xb, 8, 2, 2) -->
+<!-- # ic_Gb <- tmp$ic1 -->
+<!-- # chat_Gb <- tmp$chat -->
+<!-- # GX_b <- tmp$Fhat -->
+<!-- # eigval_Gb <- tmp$eigval -->
+<!-- ``` -->
 
 The `do_PC_level4()` and `pc_T()`functions extracts principal components at various levels of the hierarchy. I don't fully understand how the algorithm works.
 ```{r}
@@ -225,6 +225,7 @@ pc_T <- function (X, nfac) {
         # ss <- diag(eigval)
         # returnList <- list(lambda = lambda, fhat = fhat, ehat = ehat, ss = ss)
 }
+
 do_PC_level4 <- function(bigX, S_b, K_max, K_F, K_G, K_H) {
     # bigX is the data 
     # S_b is the vector that has the number of sub-blocks in each block
@@ -259,31 +260,32 @@ do_PC_level4 <- function(bigX, S_b, K_max, K_F, K_G, K_H) {
         bigGmat = cbind(bigGmat, G[[b]])
     }
     
-    ic_FH <- nbplog(bigHmat, min(K_max, ncol(bigHmat)), 2, 2)$ic1
-    FH <- pc_T(bigHmat, ic_FH)$F.hat
+    # ic_FH <- nbplog(bigHmat, min(K_max, ncol(bigHmat)), 2, 2)$ic1
+    # FH <- pc_T(bigHmat, ic_FH)$F.hat
+    # 
+    # FX <- pc_T(scale(bigXmat), K_F)$F.hat
     
-    FX <- pc_T(scale(bigXmat), K_F)$F.hat
+    # ic_F <- nbplog(bigGmat, min(K_max, ncol(bigGmat)), 2, 2)$ic1
+    # FF <- pc_T(bigGmat, min(max(ic_F, 1), K_F))$F.hat
     
-    ic_F <- nbplog(bigGmat, min(K_max, ncol(bigGmat)), 2, 2)$ic1
-    FF <- pc_T(bigGmat, min(max(ic_F, 1), K_F))$F.hat
-    
-    ret.list <- list(FF = FF, G = G, H = H, FH = FH, FX = FX, GX = GX)
+    ret.list <- list(G = G, H = H)
     return(ret.list)
 }
 
 PC_level4 <- do_PC_level4(data, S_b, 8, K_F, K_G, K_H)
-F_pc <- PC_level4$FF
 G_pc <- PC_level4$G
 H_pc <- PC_level4$H
-FH_pc <- PC_level4$FH
-FX_pc <- PC_level4$FX
-GX_pc <- PC_level4$GX
 ```
 
 Initialize factors as PC estimates plus random noise.
 ```{r}
-sig_fix = .1;
-noise_var = .2;
+bigZ <- data
+sig_fix <- .1;
+noise_var <- .2;
+
+paramsF <- list(B = B, q_G = q_G, K_blocks = K_G, q_F = q_F*matrix(1, K_F, 1), 
+                K_facs = K_F, l_F = l_F)
+
 
 g <- vector(mode = "list", length = B)
 h <- vector(mode = "list", length = sum(S_b != 0))
@@ -318,27 +320,33 @@ for (k in 1:K_F) {
 }
 ```
 
+Now initialize parameters based on starting values for the factors. First, regress starting values of aggregate factors on their own lags to obtain starting values for the $\Psi_F$ and $\Sigma_F$.
+
 ```{r}
-trimr <- function (X, a, b) {
+trimr <- function (x, a, b) {
  #  Description: Returns matrix/vector stripped of specified rows.
  #  
  #  Inputs:
- #      X  : input matrix (or vector)
- #      m1 : first a rows to strip
- #      m2 : last b rows to strip
+ #      x : input matrix (or vector)
+ #      a : first a rows to strip
+ #      b : last b rows to strip
  #    
  #  Outputs:
- #      Z : Stripped matrix (or vector)
-    m <- nrow(X)
+ #      z : Stripped matrix (or vector)
+    
+    x <- matrix(x)
+    m <- nrow(x)
     h1 <- a + 1
     h2 <- m - b
-    Z <- X[h1:h2, ]
+    z <- x[h1:h2, ]
+    z <- matrix(z)
     
-    return(Z)
+    return(z)
 }
 
 lagn <- function (x, n) {
-#  Description: Returns lagged matrix/vector based on n. The rows are shifted down by the value of n and zeros are filled in the blank rows.
+#  Description: Returns lagged matrix/vector based on n. The rows are shifted 
+#               down by the value of n and zeros are filled in the blank rows.
 #  
 #  Inputs:
 #      x  : input matrix (or vector)
@@ -346,105 +354,126 @@ lagn <- function (x, n) {
 #    
 #  Outputs:
 #      y : lagged matrix (or vector)
-    
+        
+        x = matrix(x)
         nt <- nrow(x)
         nc <- ncol(x)
         if (n > 0) {
                 x1 <- trimr(x, 0, n)
                 y <- rbind(matrix(0, nrow = n, ncol = nc), x1)
-        }
-        if (n < 0) {
+        } else if (n < 0) {
                 x1 <- trimr(x, abs(n), 0)
                 y <- rbind(x1, matrix(0, nrow = abs(n), ncol = nc))
+        } else {
+            y <- x
         }
-        if (n == 0) {
-                y <- x
-        }
+        
         return(y)
 }
 
-draw_psi_sigma <- function (Ft, psi_F, sig2_F, prior.psi.mean, prior.psi.var, prior.Sigma.shape, prior.Sigma.dof, l_F, q_F, var_fix) {
+paramsF <- list(B = B, q_G = q_G, K_blocks = K_G, q_F = q_F*matrix(1, K_F, 1), 
+                K_facs = K_F, l_F = l_F)
+
+draw_psi_sigma <- function (Ft, psi_F, sig2_F, prior, params, var_fix, ...) {
+    # (Ft, psi_F, sig2_F, prior.psi.mean, prior.psi.var, prior.Sigma.shape, prior.Sigma.dof, l_F, q_F, var_fix)
         K_F <- ncol(Ft)
+        l_F <- getElement(params, "l_F")
+        q_F <- getElement(params, "q_F")
         max_q_F <- max(q_F)
         max_l_F <- max(l_F)
+        
         bigT <- nrow(Ft)
         PSI <- psi_F; SIG <- sig2_F
         
-        for (k in 1:K_F) {
-                q_Fk <- q_F[k]
-                xpsi_F1 = matrix(0, nrow = max_q_F, 1)
-                if (q_Fk > 0) {
-                        ystar <- as.matrix(Ft[, k])
-                        xstar <- matrix(NA, nrow = bigT, ncol = 0)
-                        for (i in 1:q_Fk) {
-                                xstar <- cbind(xstar, lagn(f, i))
-                        }
-                        ystar <- trimr(ystar, max(max_q_F, max_l_F), 0)
-                        xstar <- trimr(xstar, max(max_q_F, max_l_F), 0)
-                        TT <- nrow(ystar)
-                        
-                        prior_mean <- prior.psi.mean * matrix(1, nrow = q_Fk, ncol = 1)
-                        inv_prior_var <- as.numeric(solve(prior.psi.var)) * diag(1, nrow = q_Fk)
-                        sig_inv <- 1/sig2_F[k]
-                        
-                        post_var <- solve(inv_prior_var + sig_inv * t(xstar) %*% xstar)
-                        post_mean <- post_var %*% (inv_prior_var %*% prior_mean + sig_inv %*% t(xstar) %*% ystar)
-                        
-                        C <- chol(sig2_F[k] * post_var)
-                        accept <- 0; counter <- 0
-                        while (accept == 0 & counter < 1e3) {
-                                psi_F1 <- post_mean + t(C) * rnorm(q_Fk, 1)
-                                a <- rbind(1, -psi_F1); ceof <- a[nrow(a):1, ]
-                                root <- polyroot(ceof)
-                                rootmod <- abs(root)
-                                if (min(rootmod) > 1.0001) {
-                                        accept = 1
-                                } else {
-                                        counter <- counter + 1
-                                        accept <- 0
-                                }
-                        }
-                        # if (!accept & counter >= 1000) {
-                        #      print(counter)
-                        # }
-                        SSE <- t(ystar - xstar %*% psi_F1) %*% (ystar - xstar %*% psi_F1)
-                } else {
-                        TT <- nrow(Ft)
-                        ystar <- as.matrix(Ft[, k])
-                        SSE <- t(ystar) %*% ystar
-                }
-                if (!is.null(var_fix)) {
-                        sig2_F1 <- var_fix
-                } else {
-                        d <- prior.Sigma.shape + SSE
-                        c <- rchisq(1, df = TT + prior.Sigma.dof)
-                        sig2_F1 <- d/c
-                }
-                xpsi_F1[1:q_Fk] <- psi_F1[1:q_Fk]
-                if (k == 1) {
-                        SIG <- sig2_F1
-                        PSI <- xpsi_F1
-                } else {
-                        SIG <- rbind(SIG, sig2_F1)
-                        PSI <- rbind(PSI, t(xpsi_F1))
-                }
+        q_Fk <- q_F[1]
+        xpsi_F1 = matrix(0, nrow = max_q_F, 1)
+
+        ystar <- matrix(Ft[, 1])
+        xstar <- lagn(Ft[ ,1], 1)
+#### UP
+        ystar <- trimr(ystar, max(max_q_F, max_l_F), 0)
+        xstar <- trimr(xstar, max(max_q_F, max_l_F), 0)
+        TT <- length(ystar)
+        
+        # bring to right dimension
+        prior_mean <- prior$Psi$mean * matrix(1, nrow = q_Fk, ncol = 1)
+        inv_prior_var <- as.numeric(solve(prior$Psi$var)) * diag(1, nrow = q_Fk)
+        sig_inv <- 1/sig2_F[1]
+        
+        # posterior mean and variance
+        post_var <- solve(inv_prior_var + sig_inv * t(xstar) %*% xstar)
+        post_mean <- post_var %*% (inv_prior_var %*% prior_mean + sig_inv %*% t(xstar) %*% ystar)
+        
+        # draw from multivariate normal with posterior mean and variance
+        C <- chol(sig2_F[1] * post_var)
+        accept <- 0; counter <- 0
+        while (accept == 0 & counter < 1e3) {
+            psi_F1 <- post_mean + t(C) * rnorm(q_Fk, 1)
+            a <- rbind(1, -psi_F1); ceof <- a[nrow(a):1, ]
+            root <- polyroot(ceof)
+            rootmod <- abs(root)
+            if (min(rootmod) > 1.0001) {
+                accept = 1
+            } else {
+                counter <- counter + 1
+                accept <- 0
+            }
         }
+        # if (!accept & counter >= 1000) {
+        #      print(counter)
+        # }
+        SSE <- t(ystar - xstar %*% psi_F1) %*% (ystar - xstar %*% psi_F1)
+    
+        if (!is.null(var_fix)) {
+            sig2_F1 <- var_fix
+        } else {
+            d <- prior$Sigma$shape + SSE
+            c <- rchisq(1, df = TT + prior$Sigma$dof)
+            sig2_F1 <- d/c
+        }
+        
+        xpsi_F1[1:q_Fk] <- psi_F1[1:q_Fk]
+        if (k == 1) {
+            SIG <- sig2_F1
+            PSI <- t(xpsi_F1)
+        } else {
+            SIG <- rbind(SIG, sig2_F1)
+            PSI <- rbind(PSI, t(xpsi_F1))
+        }
+        
+        
         output <- list(SIG = SIG, PSI = PSI)
         return(output)
 }
 
-```
+compute_resids <- function (obs, Fmat, Lambda, K_F, l_F) {
+        max_l_F <- max(l_F)
+        fit <- matrix(0, nrow = nrow(obs), ncol = ncol(obs))
+        fit <- fit + Fmat %*% t(Lambda)
+        e <- obs - fit
+        return(e)
+}
 
-Initialize parameters based on starting values for the factors. First regress starting values of aggregate factors on their own lags to obtain starting values for the psi_F's and sig2_F's.
+switch_rows <- function (X, id) {
+        id1 <- id; id2 <- flipud(id)
+        temp <- X
+        X[id1, ] <- temp[id2, ]
+        X[id2, ] <- temp[id1, ]
+        return(X)
+}
 
-```{r}
+switch_cols <- function (X, id) {
+        id1 <- id; id2 <- t(flipud(t(id)))
+        temp <- X
+        X[, id1] <- temp[, id2]
+        X[, id2] <- temp[, id1]
+        return(X)
+}
+
 startprior <- list(Psi = list(mean = 0, var = 1e10), Sigma = list(shape = 0, dof = 0))
-args <- list(Ft = f, psi_F = 0.5*matrix(1, nrow = K_F, ncol = 1), 
-             sig2_F = matrix(1, nrow = K_F, ncol = 1), 
-             prior.psi.mean = startprior$Psi$mean, prior.psi.var = startprior$Psi$var, 
-             prior.Sigma.shape = startprior$Sigma$shape, prior.Sigma.dof = startprior$Sigma$dof, 
-             l_F = l_F, q_F = q_F, var_fix = sig_fix)
-psi_F <- do.call(draw_psi_sigma, args)$PSI; sig2_F <- do.call(draw_psi_sigma, args)$SIG
+
+tmp <- draw_psi_sigma(f, 0.5*matrix(1, K_F, 1), matrix(1, K_F, 1), startprior, paramsF, sig_fix)
+psi_F <- tmp$PSI; sig2_F <- tmp$SIG
 
 F_lags <- f
 lambda_F <- t( solve(t(F_lags) %*% F_lags, t(F_lags) %*% allG) )
@@ -478,48 +507,47 @@ for (i in 1:sum(S_b != 0)) {
         }
 }
 
-
-
-
 for (b in 1:B) {
      lambda_F_mat <- Lambda_F
      lambda_Fb <- as.matrix(lambda_F_mat[b, ])
      eG[[b]] <- compute_resids(g[[b]], f, lambda_Fb, K_F = K_G[b], l_F = l_G[b])
-     args.G <- list(Ft = eG[[b]], psi_F = 0.5*matrix(1, nrow = K_G[b], ncol = 1), 
-                  sig2_F = matrix(1, nrow = K_G[b], ncol = 1), 
-                  prior.psi.mean = startprior$Psi$mean, prior.psi.var = startprior$Psi$var, 
-                  prior.Sigma.shape = startprior$Sigma$shape, prior.Sigma.dof = startprior$Sigma$dof, 
-                  l_F = l_G[b], q_F = q_G[b]*rep(1, K_G[b]), var_fix = sig_fix)
-     psi_G[[b]] <- do.call(draw_psi_sigma, args.G)$PSI
-     sig2_G[[b]] <- do.call(draw_psi_sigma, args.G)$SIG
+     
+     paramsGb <- list(q_G = q_G[b], K_facs = K_G[b], l_F = l_G[b])
+     tmp <- draw_psi_sigma(eG[[b]], 0.5*matrix(1, K_G[b], 1), startprior, paramsGb, sig_fix)
+     psi_G[[b]] <- tmp$PSI
+     sig2_G[[b]] <- tmp$SIG
      
      if (S_b[b] == 0) {
           yy <- data[[b]]
-          
-          # regress all Z_bn on G_b in order to get starting values for Lambda_Gb
+          paramsG <- list(q_G = q_Z[b], K_blocks = matrix(1, ncol(yy), 1), 
+                          q_F = q_G[b] * matrix(1, K_G[b], 1), 
+                K_facs = K_F, l_F = l_F)
           gb_lags <- g[[b]]
           
           # regress individual variables on subblock factor starting values
-          lambda_Gb <- t(solve( t(gb_lags) %*% gb_lags, t(gb_lags) %*% yy ) )
-          Lambda_G[[b]] <- as.matrix(lambda_Gb[, 1])
+          lambda_Gb <- 
+          Lambda_G[[b]] <- t(solve( t(gb_lags) %*% gb_lags, t(gb_lags) %*% yy ) )
 
           # Find Zbi whose loading on Gb is closest to 1 in absolute value
           mindist <- apply(abs(Lambda_G[[b]]) - matrix(1, nrow = nrow(Lambda_G[[b]]), ncol = ncol(Lambda_G[[b]])), 2, function(x) {sort(x, decreasing = T)})
           neworder <- apply(abs(Lambda_G[[b]]) - matrix(1, nrow = nrow(Lambda_G[[b]]), ncol = ncol(Lambda_G[[b]])), 2, function(x) {order(x, decreasing = T)})
           Lambda_G[[b]] <- switch_rows(Lambda_G[[b]], neworder[1, ])
-          data[[b]] <- switch_cols(data[[b]], neworder[1, ])
+          bigZ[[b]] <- switch_cols(bigZ[[b]], neworder[1, ])
           data[[b]] <- switch_cols(data[[b]], neworder[1, ])
           signlam <- sign(Lambda_G[[b]][1, 1])
-          g[[b]][, 1] <- g[[b]] * signlam
-          Lambda_G[[b]][, 1] <- Lambda_G[[b]][, 1] * signlam
+          g[[b]] <- g[[b]] * signlam
+          Lambda_G[[b]] <- Lambda_G[[b]] * signlam
           Lambda_G[[b]][1, 1] <- 1
           
-          eZ[[b]] = compute_resids(yy, g[[b]], Lambda = Lambda_G[[b]], K_F = K_G[b], l_F = l_G[b]*matrix(1, nrow = nrow(yy), ncol = 1))
-          args.Z <- list(Ft = eZ[[b]], psi_F = 0.5*matrix(1, nrow = K_G[b], ncol = 1), sig2_F = matrix(1, nrow = nrow(yy), ncol = 1), 
-                       prior.psi.mean = startprior$Psi$mean, prior.psi.var = startprior$Psi$var, 
-                       prior.Sigma.shape = startprior$Sigma$shape, prior.Sigma.dof = startprior$Sigma$dof, 
-                       l_F = l_F[b] * matrix(1, nrow = nrow(yy), ncol = 1), q_F = q_Z[b]*matrix(1, nrow = nrow(yy), ncol = 1), var_fix = sig_fix)
-          psi_Z[[b]] <- do.call(draw_psi_sigma, args.Z)$PSI; sig2_Z[[b]] <- do.call(draw_psi_sigma, args.Z)$SIG
+          eZ[[b]] = compute_resids(yy, g[[b]], Lambda = Lambda_G[[b]], K_F = 1, 
+                                   l_F = matrix(0, nrow = nrow(yy), ncol = 1))
+          paramsZ = list(q_F = q_Z[b] * matrix(1, ncol(yy), 1), 
+                         K_facs = ncol(yy), l_F = matrix(0, ncol(yy), 1))
+          tmp <- draw_psi_sigma(eZ[[b]], 0.5 * matrix(1, ncol(yy), 1),
+                                       matrix(1, ncol(yy), 1), startprior,
+                                       paramsZ, 0.5)
+          psi_Z[[b]] <- tmp$PSI
+          sig2_Z[[b]] <- tmp$SIG
           
      } else { # if S_b[b] != 0)
           # Lambda_G <- matrix(, nrow = bigT, ncol = 0)
@@ -545,26 +573,32 @@ for (b in 1:B) {
                
                lambda_Gsub_mat <- Lambda_Gsub[[b]]
                lambda_Gbs <- lambda_Gsub_mat[Hbs_indx, ]
-               eH[[b]][[s]] <- compute_resids(h[[b]][[s]], g[[b]], lambda_Gbs, K_F = K_H[[b]][[s]], l_F = l_H[b]*ones(nrow(h[[b]][[s]]), 1))
-               args.H <- list(Ft = eH[[b]][[s]], psi_F = 0.5*matrix(1, nrow = K_H[[b]][[s]], ncol = 1), 
-                              sig2_F = matrix(1, nrow = K_H[[b]][[s]], ncol = 1), 
-                              prior.psi.mean = startprior$Psi$mean, prior.psi.var = startprior$Psi$var, 
-                              prior.Sigma.shape = startprior$Sigma$shape, prior.Sigma.dof = startprior$Sigma$dof, 
-                              l_F = l_H[b]*ones(nrow(h[[b]][[s]]), 1), q_F = q_Z[b]*ones(nrow(yy), 1), var_fix = sig_fix)
-               psi_H[[b]][[s]] <- do.call(draw_psi_sigma, args.H)$PSI; sig2_H[[b]][[s]] <- do.call(draw_psi_sigma, args.H)$SIG
+               eH[[b]][[s]] <- compute_resids(h[[b]][[s]], g[[b]], lambda_Gbs, 
+                                              K_F = K_H[[b]][[s]], 
+                                              l_F = l_H[b]*matrix(1, nrow(h[[b]][[s]]), 1))
+               paramsH <- list(B = N_bs[b, s], q_G = q_Z,
+                               K_blocks = matrix(1, ncol(yy), 1),
+                               q_F = q_H[b] * matrix(1, K_H[[b]][s], 1),
+                               q_G = q_Z[b] * matrix(1, ncol(yy), 1),
+                               K_facs = K_H[[b]][s],
+                               l_F = l_H[b] * matrix(1, ncol(yy), 1))
+               tmp <- draw_psi_sigma(eH[[b]][[s]], 0.5*matrix(1, nrow = K_H[[b]][s], ncol = 1), 
+                                     matrix(1, nrow = K_H[[b]][s], ncol = 1), 
+                                     startprior, paramsH, 0.5)
+               psi_H[[b]][[s]] <- tmp$PSI 
+               sig2_H[[b]][[s]] <- tmp$SIG
                
                hbs_lags <- h[[b]][[s]]
                
                lambda_Hbs <- t( solve( t(hbs_lags) %*% hbs_lags, t(hbs_lags) %*% yy ) )
                Lambda_H[[b]][[s]] <- as.matrix(lambda_Hbs[, 1:K_H[[b]][s]])
                
-               mindist <- apply(abs(Lambda_H[[b]][[s]]) - ones(nrow(Lambda_H[[b]][[s]]), ncol(Lambda_H[[b]][[s]])), 2, function(x) {sort(x, decreasing = T)})
-               neworder <- apply(abs(Lambda_H[[b]][[s]]) - ones(nrow(Lambda_H[[b]][[s]]), ncol(Lambda_H[[b]][[s]])), 2, function(x) {order(x, decreasing = T)})
+               mindist <- apply(abs(Lambda_H[[b]][[s]]) - matrix(1, nrow(Lambda_H[[b]][[s]]), ncol(Lambda_H[[b]][[s]])), 2, function(x) {sort(x, decreasing = T)})
+               neworder <- apply(abs(Lambda_H[[b]][[s]]) - matrix(1, nrow(Lambda_H[[b]][[s]]), ncol(Lambda_H[[b]][[s]])), 2, function(x) {order(x, decreasing = T)})
                
                Lambda_H[[b]][[s]] <- switch_rows(Lambda_H[[b]][[s]], neworder[1, ])
                
-               data[[b]][[s]] <- switch_cols(data[[b]][[s]], neworder[1, ])
-               data[[b]][[s]] <- switch_cols(data[[b]][[s]], neworder[1, ])
+               bigZ[[b]][[s]] <- switch_cols(bigZ[[b]][[s]], neworder[1, ])
                
                for (i in 1:K_H[[b]][[s]]) {
                        signlam[i] <- sign(Lambda_H[[b]][[s]][i, i])
@@ -575,62 +609,43 @@ for (b in 1:B) {
                diag(Lambda_H[[b]][[s]]) <- rep(1, ncol(Lambda_H[[b]][[s]]))
                Lambda_H[[b]][[s]][upper.tri(Lambda_H[[b]][[s]])] <- 0
                
-               eZ[[b]][[s]] <- compute_resids(yy, h[[b]][[s]], Lambda_H[[b]][[s]], K_F = K_H[[b]][[s]], l_F = l_H[b]*ones(nrow(h[[b]][[s]]), 1))
-               args.Z <- list(Ft = eZ[[b]][[s]], psi_F = 0.5*ones(Nsub[b, s], 1), sig2_F = ones(Nsub[b, s], 1), 
-                              prior.psi.mean = startprior$Psi$mean, prior.psi.var = startprior$Psi$var, 
-                              prior.Sigma.shape = startprior$Sigma$shape, prior.Sigma.dof = startprior$Sigma$dof, 
-                              l_F = l_H[b]*ones(nrow(yy), 1), q_F = q_Z[b]*ones(nrow(yy), 1), var_fix = sig_fix)
-               psi_Z[[b]][[s]] <- do.call(draw_psi_sigma, args.Z)$PSI; sig2_Z[[b]][[s]] <- do.call(draw_psi_sigma, args.Z)$SIG
+               eZ[[b]][[s]] <- compute_resids(yy, h[[b]][[s]], Lambda_H[[b]][[s]], 
+                                              K_F = K_H[[b]][[s]], 
+                                              l_F = l_H[b]*matrix(1, nrow(h[[b]][[s]]), 1))
+               paramsZ <- list(q_F = 1 * matrix(1, ncol(yy), 1), K_facs = ncol(yy), l_F =  matrix(0, ncol(yy), 1))
+               tmp <- draw_psi_sigma(eX[[b]][[s]], 0.5*matrix(1, nrow = N_bs[b, s], ncol = 1), 
+                                     matrix(1, nrow = N_bs[b, s], ncol = 1), 
+                                     startprior, paramsZ, 0.5)
+               psi_Z[[b]][[s]] <- tmp$PSI 
+               sig2_Z[[b]][[s]] <- tmp$SIG
                } # end for (s in 1:S_b[b])
         } # end else if (S_b[b] == 0)
 } # end for (b in 1:B)
 ```
 
+Run sampler.
 ```{r}
-#| eval = FALSE, include = FALSE
-
-## Functions ----
-
-
-
-switch_rows <- function (X, id) {
-        id1 <- id; id2 <- flipud(id)
-        temp <- X
-        X[id1, ] <- temp[id2, ]
-        X[id2, ] <- temp[id1, ]
-        return(X)
-}
-switch_cols <- function (X, id) {
-        id1 <- id; id2 <- t(flipud(t(id)))
-        temp <- X
-        X[, id1] <- temp[, id2]
-        X[, id2] <- temp[, id1]
-        return(X)
-}
-
-# Initialize Sampler ----
-
-
-
-
-
-
-
-
-
-
-
-
-# Run Sampler ----
-
 jj <- 1
 
-## Priors ----
-prior.F <- list(Lambda.mean = 0, Lambda.var = 10, Psi.mean = 0.5, Psi.var = 10, Sigma.shape = 0.01, Sigma.dof = 4)
-prior.G <- list(Lambda.mean = 0, Lambda.var = 10, Psi.mean = 0.5, Psi.var = 10, Sigma.shape = 0.01, Sigma.dof = 4)
-prior.H <- list(Lambda.mean = 0, Lambda.var = 10, Psi.mean = 0.5, Psi.var = 10, Sigma.shape = 0.01, Sigma.dof = 4)
-prior.Z <- list(Psi.mean = 0.5, Psi.var = 10, Sigma.shape = 0.01, Sigma.dof = 4)
-priors <- list(prior.F, prior.G, prior.H, prior.Z)
+# Set priors
+prior <- list("F" = list("Lambda" = list(mean = 0, var = 10), 
+                         "Psi" = list(mean = 0.5, var = 10), 
+                         "Sigma" = list(shape = 0.01, dof = 4)),
+              "G" = list("Lambda" = list(mean = 0, var = 10), 
+                         "Psi" = list(mean = 0.5, var = 10), 
+                         "Sigma" = list(shape = 0.01, dof = 4)),
+              "H" = list("Lambda" = list(mean = 0, var = 10), 
+                         "Psi" = list(mean = 0.5, var = 10), 
+                         "Sigma" = list(shape = 0.01, dof = 4)),
+              "Z" = list("Psi" = list(mean = 0.5, var = 10), 
+                         "Sigma" = list(shape = 0.01, dof = 4)))
+
+# Set parameters
+#params <- list("B" = B)
+n_burn <- 50000
+n_keep <- 50000
+n_skip <- 50
+n_gibbs <- n_burn + n_keep
 
 cal_alpha <- function(FF, Psi, Lambda) {
         
@@ -665,175 +680,8 @@ cal_alpha <- function(FF, Psi, Lambda) {
         return(output)
 }
 
-sample_facs <- function(g, alpha, lambda_tilde, psi_F, sig2_F, psi_G, sig2_G, params) {
-        
-        B <- params[["B"]]
-        q_G <- params[["q_G"]]
-        max_q_G <- max(q_G)
-        K_G <- params[["K_G"]]
-        K_F <- params[["K_facs"]]
-        q_F <- params[["q_F"]]
-        max_q_F <- max(q_F)
-        
-        Gmat <- NULL
-        sig2_G_vec <- NULL
-        psi_G_mat <- NULL
-        
-        for (b in 1:B) {
-                Gmat <- cbind(Gmat, g[[b]])
-                sig2_G_vec <- rbind(sig2_G_vec, sig2_G[[b]])
-                
-                if (max_q_G > 0) {
-                        psi_G_mat <- rbind(psi_G_mat, cbind(psi_G[[b]], matrix(0, nrow = K_G[b], ncol = max_q_G - q_G[b])))
-                } else {
-                        psi_G_mat <- rbind(psi_G_mat, matrix(0, nrow = K_G[b], ncol = 1))
-                }
-        }
-        TT <- size(Gmat, 1); N <- size(Gmat, 2)
-        ystar <- matrix(0, nrow = TT, ncol = N)
-        for (i in 1:N) {
-                require(signal)
-                ystar[ , i] <- filter(as.vector(cbind(1, -Psi[b, ])), 1, Gmat[ , i])
-        }
-        ystar <- t(ystar)
-        
-        # transition matrix of the filtered data is r = p + 1 + q + 1
-        ndim <- size(lambda_tilde, 2)
-        psi_F_mat <- zeros(K_F, max_q_F * K_F)
-        for (r in 1:K_F) {
-                indx <- seq(r, K_F*max_q_F, K_F)
-                psi_F_mat[r, indx] <- psi_F[r, ]
-        }
-        
-        A <- zeros(ndim)
-        A[1:size(psi_F_mat, 1), 1:(ndim - K_F)] <- eye(ndim - K_F)
-        H <- lambda_tilde
-        QQ <- zeros(ndim, ndim)
-        QQ[1:K_F, 1:K_F] <- diag(sig2_F)
-        R <- diag(sig2_G_vec)
-        Alpha <- cbind(alpha, zeros(nrows(alpha), ndim - ncol(alpha)))
-        
-        # Initialize Kalman Filter
-        Gtt <- zeros(ndim, 1)
-        P00 <- solve(eye(ndim^2) - kronecker(A, A)) %*% vec(QQ)
-        Ptt <- reshape(P00, ndim, ndim)
-        
-        # Kalman filter recursion
-        Fmat <- zeros(ndim, TT)
-        Pmat <- vector(mode = "list", length = TT)
-        
-        for (t in 1:TT) {
-                Gtt1    <- t(Alpha[t, ]) + A %*% Gtt1           # x(t|t-1)
-                Ptt1    <- A %*% Ptt %*% t(A) + QQ              # P(t|t-1)
-                ett1    <- ystar[ , t] - H %*% Gtt1             # eta(t|t-1)=y(t)- y(t|t-1)= y(t)-H*x(t|t-1)
-                v_ett1  <- H %*% Ptt11 %*% t(H) + R             # var(eta(t|t-1))
-                k_gn    <- Ptt1 %*% t(H) %*% solve(v_ett1)      # K=P(t|t-1)H'/ f(t|t-1)
-                Gtt     <- Gtt1 + k_gn %*% ett1                 # x(t|t)=x(t|t-1)+ K eta(t|t-1)
-                Ptt     <- (eye(ndim) - k_gn %*% H) %*% Ptt1    # P(t|t)= P(t|t-1)-K*H*P(t|t-1)
-                
-                Fmat[ , t] <- Gtt
-                Pmat[[t]] <- Ptt
-        }
-        
-        # Carter-Kohn backward sampling algorithm
-        FT_mat <- zeros(TT, K_F)
-        G <- t(chol(Pmat[[TT]]))
-        FT <- Fmat[ , TT] + G %*% matrix(rnorm(ndim), nrow = ndim, ncol = 1)
-        FT_mat[TT, 1:K_F] <- FT[1:K_F, 1]
-        jj <- 1:K_F
-        
-        for (t in (TT-1):1) {
-                etT <- FT[jj] - t(Alpha[t + 1, jj]) - A[jj, ] %*% Fmat[ , t]
-                v_etT <- A[jj, ] %*% Pmat[[t]] %*%t(A[jj, ]) + QQ[jj, jj]
-                k_gn0 <- Pmat[[t]] %*% t(A[jj, ]) %*% solve(v_etT)
-                Fmat[ , t] <- Fmat[ , t] + k_gn0 %*% etT
-                Pmat[[t]] <- (eye(ndim) - k_gn0 %*% A[jj, ]) %*% Pmat[[t]]
-                G <- chol(Pmat[[t]])
-                FT <- Fmat[ , t] + G %*% rnorm(ndim)
-                FT_mat[t, 1:K_F] <- FT[1:KF, 1]
-        }
-        done <- 1
-        return(FF_mat)
-}
-
-draw_lambda <- function(G, FF, psi_G, sig2_G, prior, params) {
-      
-       B <- params[["B"]]
-       q_G <- params[["q_G"]]
-       max_q_G <- max(q_G)
-       K_G <- params[["K_blocks"]]
-       l_F <- params[["l_F"]]
-       max_l_F <- max(l_F)
-       Lambda_F <- NULL
-       count <- 0
-       LAMBDA <- vector(mode = "list", length = max_l_F + 1)
-       
-       for (b in 1:B) {
-               Gb <- G[[b]]
-               TT <- size(Gb, 1)
-               k_G <- size(Gb, 2)
-               l_Fb <- l_F[b]
-               
-               for (i in 1:k_G) {
-                       count <- count + 1
-                       
-                       F_filt <- filter(cbind(1, -psi_G[[b]][i, ]), 1, FF)
-                       ystar <- filter(cbind(1, -psi_G[[b]][i, ]), 1, Gb[ , i])
-                       Fstar <- F_filt
-                       for (j in 1:l_Fb) {
-                               Fstar <- cbind(Fstar, lagn(F_filt, j))
-                       }
-                       Fstar <- trimr(Fstar, max(max_q_G, l_Fb), 0)
-                       ystar <- trimr(ystar, max(max_q_G, l_Fb), 0)
-                       
-                       # bring to right dimension
-                       prior_mean <- prior[["mean"]] %*% ones(K_F*(l_Fb + 1), 1)
-                       prior_var <- prior[["var"]] %*% eye(K_F*(l_Fb + 1))
-                       sig_inv <- 1/sig2_G[[b]][i]
-                       
-                       # posterior mean and variance
-                       post_var <- solve( solve(prior_var) + sig_inv %*% t(Fstar) %*% Fstar )
-                       post_mean <- post_var %*% ( solve(prior_var) %*% prior_mean + sig_inv %*% t(Fstar) %*% ystar )
-                       
-                       # draw from multivariate normal with posterior mean and variance
-                       C <- chol(post_var)
-                       lambda_Fi <- post_mean + t(C) %*% matrix(rnorm(K_F * (l_Fb + 1)), ncol = 1)
-                       Lambda_F <- rbind(Lambda_F, t(lambda_Fi))
-                       
-               } # end for (i in 1:k_G)
-       } # end for (b in 1:B)
-       
-       # Impose lower triangularity with ones on the diagonal for identification
-       
-       for (l in 1:(max_l_F + 1)) {
-              LAMBDA[[l]] <- Lambda_F[ , ((l-1)*K_F + 1):(l*K_F)]
-              for (j in 1:K_F) {
-                if (l == 1) {
-                  LAMBDA[[l]][j, j] <- 1
-                }
-                LAMBDA[[l]][j, (j+1):K_F] <- 0
-              }
-       }
-}
-
-Lambda_F <- list(Lambda_F)
-for (gibbs in 1:n_gibbs) {
-        # Update global factors and corresponding parameters using last iteration's draws of params and block factors
-        alpha_F <- cal_alpha(f, matrix(unlist(psi_G), ncol = 1), Lambda_F)$alpha
-        lambda_F_tilde <- cal_alpha(f, unlist(psi_G), Lambda_F)$Lambda_tilde
-        
-        paramsF <- list(B <- B, q_G <- q_G, q_F <- q_F, K_G <- K_G, K_F <- K_facs)
-        f <- do.call(sample_facs, c(g, zeros(size(f)), lambda_F_tilde, psi_F, sig2_F, psi_G, sig2_G, paramsF))
-} # end for (gibbs in 1:n_gibbs)
+# for (gibbs in 1:n_gibbs) {
+#     # Update global factors and corresponding parameters using last iterations's draws of params and block factors
+#     
+# }
 ```
-
-```{r}
-n_burn <- 50000
-n_keep <- 50000
-n_skip <- 50
-n_gibbs <- n_burn + n_keep
-```
-
-
-
-
