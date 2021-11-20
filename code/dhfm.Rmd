@@ -1,0 +1,411 @@
+---
+output: 
+  pdf_document:
+    citation_package: biblatex
+    latex_engine: pdflatex
+bibliography: ref.bib
+header-includes:
+- \usepackage{hyperref}
+- \usepackage{array}
+- \usepackage{caption}
+- \usepackage{graphicx}
+- \usepackage{siunitx}
+- \usepackage{multirow}
+- \usepackage{hhline}
+- \usepackage{calc}
+- \usepackage{tabularx}
+- \usepackage{fontawesome}
+- \usepackage[para,online,flushleft]{threeparttable}
+- \usepackage{fvextra}
+- \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
+biblio-style: numeric
+title: "Replication code for 'Dynamic Hierarchical Factor Models'"
+thanks: "Thanks to Dr. Steven V. Miller for the R Markdown template (http://github.com/svmiller)."
+author: 
+- name: Anthony M. Thomas, Jr.
+  affiliation: The University of Texas at Arlington
+abstract: "Insert text."
+keywords: "dynamic factor model, gibbs sampling"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+geometry: margin = 0.75in
+fontfamily: courier
+fontsize: 11pt
+# spacing: double
+# endnote: no
+---
+
+Packages
+```{r}
+# knitr         for
+# markdown      for
+# tidyverse     for piping commands with %>% 
+# R.matlab      for readMat function
+# matlab        for
+# mSTEM         for conv function
+# signal        for filter function
+# fBasics       for vec function
+
+list.pacs <- c("knitr", "markdown", "tidyverse", "R.matlab", "matlab", "mSTEM", "signal", 
+               "fBasics")
+sapply(list.pacs, require, character.only = TRUE)
+renv::snapshot()
+
+# Clear environment
+rm(list = ls())
+```
+
+```{r setup}
+#| include = FALSE
+knitr::opts_chunk$set(cache = TRUE, message = FALSE, warning = FALSE,
+                      fig.path = '_figs/',
+                      cache.path = '_cache/',
+                      fig.process = function(x) {
+                          x2 = sub('-\\d+([.][a-z]+)$', '\\1', x)
+                          if (file.rename(x, x2)) x2 else x
+                          })
+```
+
+
+# Introduction
+Factor modeling has become a widely used dimension reduction technique, but it is often criticized because the factors are difficult to interpret. Interpretation of the factors can be made easier when the data is organized into blocks. 
+
+```{r}
+load("data/dhfm_data.Rdata")
+```
+
+
+There are $T = 227$ time series observations on $N = 445$ variables. The data is organized into $B = 5$ blocks. Three of those blocks are organized into sub-blocks. $N_{b,s}$ denotes the number of variables in sub-block $s$ or block $b$. $S_b$ denotes the number of sub-blocks in block $b$, where where $b \in \left\{ 1, 2, \ldots, B \right\}$. $K_F$ denotes the number of common factors. $K_G(b)$ denotes the number of block-level factors in block $b$. $K_H(b, s)$ denotes the number of sub-block-level factors in sub-block $s$ of block $b$, where $s \in \left\{ 1, 2, \ldots, S_b \right\}$.
+ 
+```{r}
+bigT <- nrow(data[[1]][[1]])
+bigN <- ncol(matrix(unlist(data), nrow = bigT))
+B <- 5
+S_b <- c(3, 2, 2, 0, 0)
+N_bs <- matrix(0, nrow = sum(S_b != 0), ncol = sum(S_b != 0))
+for (b in 1:sum(S_b != 0)) {
+        if (S_b[b] != 0) {
+                for (s in 1:S_b[b]) {
+                        N_bs[b, s] <- ncol(data[[b]][[s]])
+                }
+        }
+}
+K_F <- 1
+K_G <- c(1, 1, 1, 1, 1)
+K_H <- vector("list", B)
+K_H[[1]] <- c(1, 1, 2)
+K_H[[2]] <- c(2, 1)
+K_H[[3]] <- c(1, 1)
+K_H[[4]] <- K_H[[5]] <- 0
+
+q_F <- 1 # lag order of transition equation
+q_G <- rep(1, B)
+q_H <- rep(1, B)
+q_Z <- rep(1, B)
+
+l_F <- rep(0, B)
+l_G <- rep(0, B)
+l_H <- rep(0, B)
+```
+
+## Preliminary PCA
+
+The `pc_T()` function does PCA on the Sum of Squares and Cross Products matrix. The `do_PC_level4()` function extracts principal components at various levels of the hierarchy.
+```{r}
+source("code/_functions/pc_T.R")
+source("code/_functions/do_PC_level4.R")
+
+tmp <- do_PC_level4(bigZ_ns, S_b, K_F, K_G, K_H)
+F_pc <- tmp$F_PC
+G_pc <- tmp$G_PC
+H_pc <- tmp$H_PC
+```
+
+Initialize factors as PC estimates plus random noise.
+```{r}
+
+```
+
+Now initialize parameters based on starting values for the factors. First, regress starting values of aggregate factors on their own lags to obtain starting values for the $\Psi_F$ and $\Sigma_F$.
+
+```{r}
+trimr <- function (x, a, b) {
+ #  Description: Returns matrix/vector stripped of specified rows.
+ #  
+ #  Inputs:
+ #      x : M by N input matrix
+ #      a : first a rows to strip
+ #      b : last b rows to strip
+ #    
+ #  Outputs:
+ #      z : (M-a) by (N-b) stripped matrix
+    
+    x <- as.matrix(x)
+    m <- nrow(x)
+    h1 <- a + 1
+    h2 <- m - b
+    
+    
+    return(z)
+}
+
+lagn <- function (x, n) {
+#  Description: Returns lagged matrix/vector based on n. The rows are shifted 
+#               down by the value of n and zeros are filled in the blank rows.
+#  
+#  Inputs:
+#      x  : input matrix (or vector)
+#      n  : number of lags
+#    
+#  Outputs:
+#      y : lagged matrix (or vector)
+        
+        x = matrix(x)
+        nt <- nrow(x)
+        nc <- ncol(x)
+        if (n > 0) {
+                x1 <- trimr(x, 0, n)
+                y <- rbind(matrix(0, nrow = n, ncol = nc), x1)
+        } else if (n < 0) {
+                x1 <- trimr(x, abs(n), 0)
+                y <- rbind(x1, matrix(0, nrow = abs(n), ncol = nc))
+        } else {
+            y <- x
+        }
+        
+        return(y)
+}
+
+paramsF <- list(B = B, q_G = q_G, K_blocks = K_G, q_F = q_F*matrix(1, K_F, 1), 
+                K_facs = K_F, l_F = l_F)
+
+
+
+compute_resids <- function (obs, fac, Lambda) {
+
+    fit <- matrix(0, nrow = nrow(obs), ncol = ncol(obs))
+    fit <- fit + fac[, 1] %*% t(Lambda[, 1])
+    e <- obs - fit
+    return(e)
+}
+
+switch_rows <- function (X, id) {
+        id1 <- id; id2 <- flipud(id)
+        temp <- X
+        X[id1, ] <- temp[id2, ]
+        X[id2, ] <- temp[id1, ]
+        return(X)
+}
+
+switch_cols <- function (X, id) {
+        id1 <- id; id2 <- t(flipud(t(id)))
+        temp <- X
+        X[, id1] <- temp[, id2]
+        X[, id2] <- temp[, id1]
+        return(X)
+}
+
+startprior <- list(Psi = list(mean = 0, var = 1e10), Sigma = list(shape = 0, dof = 0))
+
+tmp <- draw_psi_sigma(f, 0.5*matrix(1, K_F, 1), matrix(1, K_F, 1), startprior, paramsF, sig_fix)
+psi_F <- tmp$PSI; sig2_F <- tmp$SIG
+
+F_lags <- f
+lambda_F <- t( solve(t(F_lags) %*% F_lags, t(F_lags) %*% allG) )
+Lambda_F <- as.matrix(lambda_F[, 1])
+
+signlam <- NULL
+for (i in 1:K_F) {
+     signlam[i] <- sign(Lambda_F[i])
+     f[, i] <- f[,i] * signlam
+     Lambda_F[, i] <- Lambda_F[, i] * signlam[i]
+}
+Lambda_F[1, 1] <- 1
+
+eG <- eZ <- eH <- vector(mode = "list", length = B)
+psi_G <- psi_Z <- vector(mode = "list", length = B)
+psi_H <- vector(mode = "list", length = sum(S_b != 0))
+sig2_G <- sig2_Z <- sig2_H <- vector(mode = "list", length = B)
+Lambda_G <- Lambda_Gsub <- vector(mode = "list", length = B)
+Lambda_H <- vector(mode = "list", length = sum(S_b != 0))
+
+for (i in 1:sum(S_b != 0)) {
+        Lambda_H[[i]] <- vector(mode = "list", length = S_b[i])
+        for (j in 1:S_b[i]) {
+                Lambda_H[[i]][[j]] <- matrix(NA, nrow = ncol(data[[i]][[j]]), ncol = K_H[[i]][[j]])
+        }
+}
+
+for (b in 1:B) {
+     lambda_F_mat <- Lambda_F
+     lambda_Fb <- as.matrix(lambda_F_mat[b, ])
+     eG[[b]] <- compute_resids(g[[b]], f, lambda_Fb)
+     paramsF <- list(B = B, q_G = q_G, K_blocks = K_G, q_F = q_F*matrix(1, K_F, 1), 
+                K_facs = K_F, l_F = l_F)
+     paramsGb <- list(q_F = 1, K_facs = 1, l_F = 0)
+     tmp <- draw_psi_sigma(eG[[b]], 0.5*matrix(1, K_G[b], 1), matrix(1, K_G[b], 1), startprior, paramsGb, sig_fix)
+     psi_G[[b]] <- tmp$PSI
+     sig2_G[[b]] <- tmp$SIG
+     
+     if (S_b[b] == 0) {
+          yy <- data[[b]]
+          paramsG <- list(q_G = q_Z[b], K_blocks = matrix(1, ncol(yy), 1), 
+                          q_F = q_G[b] * matrix(1, K_G[b], 1), 
+                K_facs = K_F, l_F = l_F)
+          gb_lags <- g[[b]]
+          
+          # regress individual variables on subblock factor starting values
+          lambda_Gb <- 
+          Lambda_G[[b]] <- t(solve( t(gb_lags) %*% gb_lags, t(gb_lags) %*% yy ) )
+
+          # Find Zbi whose loading on Gb is closest to 1 in absolute value
+          mindist <- apply(abs(Lambda_G[[b]]) - matrix(1, nrow = nrow(Lambda_G[[b]]), ncol = ncol(Lambda_G[[b]])), 2, function(x) {sort(x, decreasing = T)})
+          neworder <- apply(abs(Lambda_G[[b]]) - matrix(1, nrow = nrow(Lambda_G[[b]]), ncol = ncol(Lambda_G[[b]])), 2, function(x) {order(x, decreasing = T)})
+          Lambda_G[[b]] <- switch_rows(Lambda_G[[b]], neworder[1, ])
+          bigZ[[b]] <- switch_cols(bigZ[[b]], neworder[1, ])
+          data[[b]] <- switch_cols(data[[b]], neworder[1, ])
+          signlam <- sign(Lambda_G[[b]][1, 1])
+          g[[b]] <- g[[b]] * signlam
+          Lambda_G[[b]] <- Lambda_G[[b]] * signlam
+          Lambda_G[[b]][1, 1] <- 1
+          
+          eZ[[b]] = compute_resids(yy, g[[b]], Lambda = Lambda_G[[b]])
+          paramsZ = list(q_F = q_Z[b] * matrix(1, ncol(yy), 1), 
+                         K_facs = ncol(yy), l_F = matrix(0, ncol(yy), 1))
+          tmp <- draw_psi_sigma(eZ[[b]], 0.5 * matrix(1, ncol(yy), 1),
+                                       matrix(1, ncol(yy), 1), startprior,
+                                       paramsZ, 0.5)
+          psi_Z[[b]] <- tmp$PSI
+          sig2_Z[[b]] <- tmp$SIG
+          
+     } else { # if S_b[b] != 0)
+          # Lambda_G <- matrix(, nrow = bigT, ncol = 0)
+          # g[[b]] <- g[[b]]
+          gb_lags <- g[[b]]
+          Hb <- matrix(unlist(h[[b]]), nrow = bigT)
+
+          # regress individual variables on subblock factor starting values
+          lambda_Gb <- t( solve(t(gb_lags) %*% gb_lags, t(gb_lags) %*% Hb) )
+          Lambda_Gsub[[b]] <- as.matrix(lambda_Gb[, K_G[b]])
+          signlam <- sign(Lambda_Gsub[[b]][1, 1])
+          g[[b]][, 1] <- g[[b]] * signlam
+          Lambda_Gsub[[b]][, 1] <- as.matrix(Lambda_Gsub[[b]][, 1]) * signlam
+          Lambda_Gsub[[b]][1, 1] <- 1
+
+          for (s in 1:S_b[b]) {
+               yy <- data[[b]][[s]]
+               if (s == 1) {
+                    Hbs_indx <- 1:K_H[[b]][s]
+               } else {
+                    Hbs_indx <- (sum(K_H[[b]][1:(s-1)]) + 1):sum(K_H[[b]][1:s])
+               }
+               
+               lambda_Gsub_mat <- Lambda_Gsub[[b]]
+               lambda_Gbs <- lambda_Gsub_mat[Hbs_indx, ]
+               eH[[b]][[s]] <- compute_resids(h[[b]][[s]], g[[b]], matrix(lambda_Gbs))
+               paramsH <- list(B = N_bs[b, s], q_G = q_Z,
+                               K_blocks = matrix(1, ncol(yy), 1),
+                               q_F = q_H[b] * matrix(1, K_H[[b]][s], 1),
+                               q_G = q_Z[b] * matrix(1, ncol(yy), 1),
+                               K_facs = K_H[[b]][s],
+                               l_F = l_H[b] * matrix(1, ncol(yy), 1))
+               tmp <- draw_psi_sigma(eH[[b]][[s]], 0.5*matrix(1, nrow = K_H[[b]][s], ncol = 1), 
+                                     matrix(1, nrow = K_H[[b]][s], ncol = 1), 
+                                     startprior, paramsH, 0.5)
+               psi_H[[b]][[s]] <- tmp$PSI 
+               sig2_H[[b]][[s]] <- tmp$SIG
+               
+               hbs_lags <- h[[b]][[s]]
+               
+               lambda_Hbs <- t( solve( t(hbs_lags) %*% hbs_lags, t(hbs_lags) %*% yy ) )
+               Lambda_H[[b]][[s]] <- as.matrix(lambda_Hbs[, 1:K_H[[b]][s]])
+               
+               mindist <- apply(abs(Lambda_H[[b]][[s]]) - matrix(1, nrow(Lambda_H[[b]][[s]]), ncol(Lambda_H[[b]][[s]])), 2, function(x) {sort(x, decreasing = T)})
+               neworder <- apply(abs(Lambda_H[[b]][[s]]) - matrix(1, nrow(Lambda_H[[b]][[s]]), ncol(Lambda_H[[b]][[s]])), 2, function(x) {order(x, decreasing = T)})
+               
+               Lambda_H[[b]][[s]] <- switch_rows(Lambda_H[[b]][[s]], neworder[1, ])
+               
+               bigZ[[b]][[s]] <- switch_cols(bigZ[[b]][[s]], neworder[1, ])
+               
+               for (i in 1:K_H[[b]][[s]]) {
+                       signlam[i] <- sign(Lambda_H[[b]][[s]][i, i])
+                       h[[b]][[s]][ , i] <- h[[b]][[s]][, i] * signlam[i]
+                       Lambda_H[[b]][[s]][ , i] <- Lambda_H[[b]][[s]][, i] * signlam[i]
+                       }
+               
+               diag(Lambda_H[[b]][[s]]) <- rep(1, ncol(Lambda_H[[b]][[s]]))
+               Lambda_H[[b]][[s]][upper.tri(Lambda_H[[b]][[s]])] <- 0
+               
+               eZ[[b]][[s]] <- compute_resids(yy, h[[b]][[s]], Lambda_H[[b]][[s]])
+               paramsZ <- list(q_F = 1 * matrix(1, ncol(yy), 1), K_facs = ncol(yy), l_F =  matrix(0, ncol(yy), 1))
+               tmp <- draw_psi_sigma(eZ[[b]][[s]], 0.5*matrix(1, nrow = N_bs[b, s], ncol = 1), 
+                                     matrix(1, nrow = N_bs[b, s], ncol = 1), 
+                                     startprior, paramsZ, 0.5)
+               psi_Z[[b]][[s]] <- tmp$PSI 
+               sig2_Z[[b]][[s]] <- tmp$SIG
+               } # end for (s in 1:S_b[b])
+        } # end else if (S_b[b] == 0)
+} # end for (b in 1:B)
+```
+
+Run sampler.
+```{r}
+jj <- 1
+
+# Set priors
+prior <- list("F" = list("Lambda" = list(mean = 0, var = 10), 
+                         "Psi" = list(mean = 0.5, var = 10), 
+                         "Sigma" = list(shape = 0.01, dof = 4)),
+              "G" = list("Lambda" = list(mean = 0, var = 10), 
+                         "Psi" = list(mean = 0.5, var = 10), 
+                         "Sigma" = list(shape = 0.01, dof = 4)),
+              "H" = list("Lambda" = list(mean = 0, var = 10), 
+                         "Psi" = list(mean = 0.5, var = 10), 
+                         "Sigma" = list(shape = 0.01, dof = 4)),
+              "Z" = list("Psi" = list(mean = 0.5, var = 10), 
+                         "Sigma" = list(shape = 0.01, dof = 4)))
+
+# Set parameters
+#params <- list("B" = B)
+n_burn <- 50000
+n_keep <- 50000
+n_skip <- 50
+n_gibbs <- n_burn + n_keep
+
+cal_alpha <- function(FF, Psi, Lambda) {
+        
+        K_F <- size(FF, 2)
+        l_F <- length(Lambda_F) - 1
+        q_G <- size(Psi, 2)
+        Lambda_lags <- NULL
+        for (l in 1:(l_F + 1)) {
+                Lambda_lags <- cbind(Lambda_lags, Lambda[[l]])
+        }
+        l_star <- l_F + q_G
+        
+        B <- size(Lambda[[1]], 1)
+        Lambda_tilde <- NULL
+        alpha <- NULL
+        for (b in 1:B) {
+                lambdab_tilde <- NULL
+                for (j in 1:K_F) {
+                        indx <- K_F:(K_F*(l_F + 1))
+                        lambdabj_tilde <- conv(as.vector(cbind(1, -Psi[b, ])), as.vector(Lambda_lags[b, indx]))
+                        lambdab_tilde <- cbind(lambdab_tilde, t(lambdabj_tilde))
+                }
+                lambdab_tilde <- reshape(t(lambdab_tilde), 1, K_F*(l_star + 1))
+                Lambda_tilde <- rbind(Lambda_tilde, lambdab_tilde)
+                Flags <- NULL
+                for (l in 0:l_star) {
+                        Flags <- cbind(Flags, lagn(FF, l))
+                }
+                alpha[[b]] <- Flags %*% t(lambdab_tilde)
+        }
+        output <- list(alpha, Lambda_tilde)
+        return(output)
+}
+
+# for (gibbs in 1:n_gibbs) {
+#     # Update global factors and corresponding parameters using last iterations's draws of params and block factors
+#     
+# }
+```
