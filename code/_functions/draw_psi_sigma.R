@@ -7,7 +7,7 @@
 #   
 #   Outputs:
 #   --------------------------------------------- 
-#       psi   = 
+#       psi   = vector of length K*q consisting of autoregressive coefficients      
 #       sigma = 
 #   
 #---------------------------------------------------------------------------------------------------
@@ -21,6 +21,7 @@ draw_psi_sigma <- function (Ft, psi_F, sig2_F, prior, params, var_fix, ...) {
     q_F <- getElement(params, "q_F")
     max_q_F <- max(q_F)
     max_l_F <- max(l_F)
+    output <- list()
     
     PSI <- psi_F  # K_F by 1
     SIG <- sig2_F # K_F by 1
@@ -30,7 +31,7 @@ draw_psi_sigma <- function (Ft, psi_F, sig2_F, prior, params, var_fix, ...) {
         xpsi_F1 <- matrix(0, nrow = max_q_F, 1)
         
         if (q_Fk > 0) {
-            ystar <- as.matrix(Ft[, 1]) # bigT by K_F
+            ystar <- as.matrix(Ft[, k]) # bigT by K_F
             xstar <- NA
             
             for (i in 1:q_Fk) {
@@ -46,8 +47,10 @@ draw_psi_sigma <- function (Ft, psi_F, sig2_F, prior, params, var_fix, ...) {
             sig_inv <- 1/sig2_F[k] # scalar
             
             # posterior mean and variance
+            # Dimension of post_var: either q_Fk by q_Fk or K_F by K_F
+            # Dimension of post_mean: either 
             post_var <- solve( inv_prior_var + (sig_inv * t(xstar) %*% xstar) ) # 
-            post_mean <- post_var %*% (inv_prior_var %*% prior_mean + sig_inv %*% t(xstar) %*% ystar)
+            post_mean <- post_var %*% (inv_prior_var %*% prior_mean + sig_inv * t(xstar) %*% ystar)
             
             # draw from multivariate normal with posterior mean and variance
             C <- chol(sig2_F[k] * post_var)
@@ -64,19 +67,36 @@ draw_psi_sigma <- function (Ft, psi_F, sig2_F, prior, params, var_fix, ...) {
                     accept <- 0
                 }
             }
+            if (!accept && counter >= 1000) {
+                print(counter)
+            }
+            SSE <- t(ystar - xstar %*% psi_F1) %*% (ystar - xstar %*% psi_F1)
+        } else {
+            TT <- nrow(Ft)
+            ystar <- as.matrix(Ft[, k])
+            SSE <- t(ystar) %*% ystar
         }
+        
+        if (!is.na(var_fix)) {
+            sig2_F1 <- var_fix
+        } else {
+            d = getElement(prior$Sigma, "shape") + SSE
+            c = rchisq(n = 1, df = TT + getElement(prior$Sigma, "dof"))
+            sig2_F1 <- d/c
+        }
+        
+        xpsi_F1[1:q_Fk] <- psi_F1[1:q_Fk]
+        
+        if (k == 1) {
+            SIG <- sig2_F1
+            PSI <- t(xpsi_F1)
+        } else {
+            SIG <- rbind(SIG, sig2_F1)
+            PSI <- rbind(PSI, t(xpsi_F1))
+        }
+        
+        output$SIG <- SIG 
+        output$PSI <- PSI
+        return(output)
     }
-    
-    xpsi_F1[1:q_Fk] <- psi_F1[1:q_Fk]
-    if (k == 1) {
-        SIG <- sig2_F1
-        PSI <- t(xpsi_F1)
-    } else {
-        SIG <- rbind(SIG, sig2_F1)
-        PSI <- rbind(PSI, t(xpsi_F1))
-    }
-    
-    
-    output <- list(SIG = SIG, PSI = PSI)
-    return(output)
 }
