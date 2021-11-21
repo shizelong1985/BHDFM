@@ -128,52 +128,9 @@ Initialize factors as PC estimates plus random noise.
 Now initialize parameters based on starting values for the factors. First, regress starting values of aggregate factors on their own lags to obtain starting values for the $\Psi_F$ and $\Sigma_F$.
 
 ```{r}
-trimr <- function (x, a, b) {
- #  Description: Returns matrix/vector stripped of specified rows.
- #  
- #  Inputs:
- #      x : M by N input matrix
- #      a : first a rows to strip
- #      b : last b rows to strip
- #    
- #  Outputs:
- #      z : (M-a) by (N-b) stripped matrix
-    
-    x <- as.matrix(x)
-    m <- nrow(x)
-    h1 <- a + 1
-    h2 <- m - b
-    
-    
-    return(z)
-}
 
-lagn <- function (x, n) {
-#  Description: Returns lagged matrix/vector based on n. The rows are shifted 
-#               down by the value of n and zeros are filled in the blank rows.
-#  
-#  Inputs:
-#      x  : input matrix (or vector)
-#      n  : number of lags
-#    
-#  Outputs:
-#      y : lagged matrix (or vector)
-        
-        x = matrix(x)
-        nt <- nrow(x)
-        nc <- ncol(x)
-        if (n > 0) {
-                x1 <- trimr(x, 0, n)
-                y <- rbind(matrix(0, nrow = n, ncol = nc), x1)
-        } else if (n < 0) {
-                x1 <- trimr(x, abs(n), 0)
-                y <- rbind(x1, matrix(0, nrow = abs(n), ncol = nc))
-        } else {
-            y <- x
-        }
-        
-        return(y)
-}
+
+
 
 paramsF <- list(B = B, q_G = q_G, K_blocks = K_G, q_F = q_F*matrix(1, K_F, 1), 
                 K_facs = K_F, l_F = l_F)
@@ -204,7 +161,6 @@ switch_cols <- function (X, id) {
         return(X)
 }
 
-startprior <- list(Psi = list(mean = 0, var = 1e10), Sigma = list(shape = 0, dof = 0))
 
 tmp <- draw_psi_sigma(f, 0.5*matrix(1, K_F, 1), matrix(1, K_F, 1), startprior, paramsF, sig_fix)
 psi_F <- tmp$PSI; sig2_F <- tmp$SIG
