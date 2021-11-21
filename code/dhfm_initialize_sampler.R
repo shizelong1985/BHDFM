@@ -1,12 +1,12 @@
 bigZ <- bigZ_ns
 
 paramsF <- list()
-paramsF$B = B
-paramsF$q_G = q_G
-paramsF$K_blocks = K_G
-paramsF$q_F = q_F*matrix(1, K_F, 1)
-paramsF$K_facs = K_F
-paramsF$l_F = l_F
+paramsF$B <- B
+paramsF$q_G <- q_G
+paramsF$K_blocks <- K_G
+paramsF$q_F <- q_F*matrix(1, K_F, 1)
+paramsF$K_facs <- K_F
+paramsF$l_F <- l_F
 
 # Initialize factors as PCA estimates plus random noise
 g <- vector(mode = "list", length = B)
@@ -42,3 +42,8 @@ for (k in 1:K_F) {
     f[, k] <- sign(cor(f[, k], allG[, k])) * f[, k]
 }
 
+startprior <- list()
+startprior$Psi <- list(mean = 0, var = 1e10)
+startprior$Sigma <- list(shape = 0, dof = 0)
+
+tmp <- draw_psi_sigma(F_pc, 0.5*matrix(1, nrow = K_F, ncol = 1), matrix(1, nrow = K_F, 1), startprior, paramsF, sig_fix)
