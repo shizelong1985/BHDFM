@@ -14,8 +14,8 @@
 #   
 #   Outputs:
 #   --------------------------------------------- 
-#       fhat    = matrix of estimated factors (T by K)
-#       lambda  = matrix of estimated factor loadings 
+#       fhat    = T by k matrix of estimated factors
+#       lambda  = N by k matrix of estimated factor loadings 
 #       ehat    = residuals
 # 
 #---------------------------------------------------------------------------------------------------
@@ -25,15 +25,16 @@ pc_T <- function (x, k) {
     # Setting up preliminaries
     output  <- list()
     bigT    <- nrow(x)
+    fhat    <- matrix(NA, nrow = bigT, ncol = k)
     
     # SVD of Sum of Squares and Cross Products matrix
     xx      <- x %*% t(x)   # T by T matrix
     fhat0   <- svd(xx)$u    # T by T matrix
     
     # Estimating factors, loadings, and errors
-    fhat     <- as.matrix(fhat0[, 1:k]) * sqrt(bigT) # T by k matrix    
-    lambda   <- t(x) %*% fhat / bigT                 # N by k matrix
-    ehat     <- x - fhat %*% t(lambda)               # T by N matrix
+    fhat[, 1:k] <- fhat0[, 1:k] * sqrt(bigT)    # T by k matrix    
+    lambda      <- t(x) %*% fhat / bigT         # N by k matrix
+    ehat        <- x - fhat %*% t(lambda)       # T by N matrix
     
     output$fhat     <- fhat
     output$lambda   <- lambda
