@@ -45,8 +45,7 @@ Packages
 # signal        for filter function
 # fBasics       for vec function
 
-list.pacs <- c("knitr", "markdown", "tidyverse", "R.matlab", "matlab", "mSTEM", "signal", 
-               "fBasics")
+list.pacs <- c("knitr", "markdown", "tidyverse", "R.matlab", "matlab", "mSTEM", "signal", "fBasics")
 sapply(list.pacs, require, character.only = TRUE)
 renv::snapshot()
 
@@ -71,6 +70,7 @@ Factor modeling has become a widely used dimension reduction technique, but it i
 
 ```{r}
 load("data/dhfm_data.Rdata")
+bigZ_ns <- readRDS("~/OneDrive - University of Texas at Arlington/BHDFM/data/bigZ_ns.Rds")
 ```
 
 
