@@ -1,4 +1,12 @@
-bigZ <- bigZ_ns
+
+# Preliminary PCA
+source("code/_functions/pc_T.R")
+source("code/_functions/do_PC_level4.R")
+
+tmp <- do_PC_level4(bigZ_ns, S_b, K_F, K_G, K_H)
+F_pc <- tmp$F_PC
+G_pc <- tmp$G_PC
+H_pc <- tmp$H_PC
 
 paramsF <- list()
 paramsF$B <- B
@@ -9,6 +17,7 @@ paramsF$K_facs <- K_F
 paramsF$l_F <- l_F
 
 # Initialize factors as PCA estimates plus random noise
+bigZ <- bigZ_ns
 g <- vector(mode = "list", length = B)
 h <- vector(mode = "list", length = sum(S_b != 0))
 
