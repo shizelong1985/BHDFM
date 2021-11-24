@@ -122,21 +122,18 @@ H_pc <- tmp$H_PC
 
 Initialize factors as PC estimates plus random noise.
 ```{r}
-
+paramsF <- list()
+paramsF$B <- B
+paramsF$q_G <- q_G
+paramsF$K_blocks <- K_G
+paramsF$q_F <- q_F*matrix(1, K_F, 1)
+paramsF$K_facs <- K_F
+paramsF$l_F <- l_F
 ```
 
 Now initialize parameters based on starting values for the factors. First, regress starting values of aggregate factors on their own lags to obtain starting values for the $\Psi_F$ and $\Sigma_F$.
 
 ```{r}
-
-
-
-
-paramsF <- list(B = B, q_G = q_G, K_blocks = K_G, q_F = q_F*matrix(1, K_F, 1), 
-                K_facs = K_F, l_F = l_F)
-
-
-
 compute_resids <- function (obs, fac, Lambda) {
 
     fit <- matrix(0, nrow = nrow(obs), ncol = ncol(obs))
